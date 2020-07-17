@@ -75,20 +75,23 @@ void Application::init() {
     // ImGui_ImplOpenGL3_Init(glsl_version);
 
     //          Create shaders              //
-    construction_shader_id =
+    trunk_construction_shader_id =
         load_and_compile_shader_from_file("../src/shaders/construction.vert",
                                           "../src/shaders/trunk.geom", nullptr);
+
+    tip_construction_shader_id = load_and_compile_shader_from_file(
+        "../src/shaders/construction.vert", "../src/shaders/tip.geom", nullptr);
 
     rendering_shader_id = load_and_compile_shader_from_file(
         "../src/shaders/render.vert", nullptr, "../src/shaders/render.frag");
 
-    //      Setup input vertex array        //
-    glGenVertexArrays(1, &input_vao);
-    glBindVertexArray(input_vao);
+    //      Setup input vertex buffer        //
+    glGenVertexArrays(1, &input_buffer.vao);
+    glBindVertexArray(input_buffer.vao);
 
     // EBO
-    glGenBuffers(1, &input_ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, input_ebo);
+    glGenBuffers(1, &input_buffer.ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, input_buffer.ebo);
 
     indices = new GLuint[max_indices];
     indices[0] = 0;
@@ -99,8 +102,8 @@ void Application::init() {
                  GL_STREAM_DRAW);
 
     // VBO
-    glGenBuffers(1, &input_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, input_vbo);
+    glGenBuffers(1, &input_buffer.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, input_buffer.vbo);
 
     // position attribute
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
@@ -133,11 +136,13 @@ void Application::init() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * 4, nullptr, GL_STREAM_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * 3, vertices);
 
-    glBindVertexArray(0);
-
     //      Setup feedback vertex buffer    //
-    glGenBuffers(1, &feedback_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, feedback_vbo);
+    glGenVertexArrays(1, &feedback_buffer.vao);
+    glBindVertexArray(feedback_buffer.vao);
+
+    // VBO
+    glGenBuffers(1, &feedback_buffer.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, feedback_buffer.vbo);
 
     // position attribute
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4),
@@ -155,16 +160,22 @@ void Application::init() {
     glEnableVertexAttribArray(2);
 
     // Allocate
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * 3, nullptr, GL_STREAM_READ);
-    // glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, feedback_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * max_vertices, nullptr,
+                 GL_STREAM_COPY);
 
-    //      Setup render vertex array       //
-    glGenVertexArrays(1, &render_vao.id);
-    glBindVertexArray(render_vao.id);
+    // EBO
+    glGenBuffers(1, &render_buffer.ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, render_buffer.ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * max_indices, nullptr,
+                 GL_STREAM_COPY);
+
+    //      Setup render vertex buffer       //
+    glGenVertexArrays(1, &render_buffer.vao);
+    glBindVertexArray(render_buffer.vao);
 
     // VBO
-    glGenBuffers(1, &render_vao.vbo_id);
-    glBindBuffer(GL_ARRAY_BUFFER, render_vao.vbo_id);
+    glGenBuffers(1, &render_buffer.vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, render_buffer.vbo);
 
     // position attribute
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
@@ -185,8 +196,8 @@ void Application::init() {
                  GL_STREAM_DRAW);
 
     // EBO
-    glGenBuffers(1, &render_vao.ebo_id);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, render_vao.ebo_id);
+    glGenBuffers(1, &render_buffer.ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, render_buffer.ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * max_indices, nullptr,
                  GL_STREAM_DRAW);
 
@@ -219,10 +230,13 @@ void Application::run() {
     mouse.last_y = mouse.y;
     mouse.button_state = SDL_GetMouseState(&mouse.x, &mouse.y);
 
-    // Geometry passes
-    glUseProgram(construction_shader_id);
-    glBindVertexArray(input_vao);
-    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, feedback_vbo);
+    //          Geometry pass       //
+    // Trunk
+    glUseProgram(trunk_construction_shader_id);
+
+    glBindVertexArray(input_buffer.vao);
+
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, feedback_buffer.vbo);
 
     glBeginTransformFeedback(GL_POINTS);
     glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
@@ -268,6 +282,40 @@ void Application::run() {
     indices[next_index++] = last_triangle_start + 4;
     indices[next_index++] = last_triangle_start + 5;
 
+    // // Tip
+    // glUseProgram(tip_construction_shader_id);
+
+    // glBindVertexArray(input_buffer.vao);
+    // glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(GLuint) * 3, indices);
+    // glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * 3,
+    //                 &vertices[next_vertex - 3]);
+
+    // glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, feedback_buffer.vbo);
+
+    // glBeginTransformFeedback(GL_POINTS);
+    // glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+    // glEndTransformFeedback();
+
+    // glFlush();
+
+    // Copy vertices to CPU memory
+    glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(Vertex) * 3,
+                       &vertices[next_vertex]);
+    ++next_vertex;
+
+    last_triangle_start = indices[next_index - 3];
+    indices[next_index++] = last_triangle_start + 0;
+    indices[next_index++] = last_triangle_start + 3;
+    indices[next_index++] = last_triangle_start + 1;
+
+    indices[next_index++] = last_triangle_start + 1;
+    indices[next_index++] = last_triangle_start + 3;
+    indices[next_index++] = last_triangle_start + 2;
+
+    indices[next_index++] = last_triangle_start + 2;
+    indices[next_index++] = last_triangle_start + 3;
+    indices[next_index++] = last_triangle_start + 0;
+
     // Render
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
@@ -289,13 +337,13 @@ void Application::run() {
     glUniformMatrix4fv(uniform_id, 1, 0, value_ptr(projection));
 
     // Update VAO data
-    glBindVertexArray(render_vao.id);
+    glBindVertexArray(render_buffer.vao);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, render_vao.ebo_id);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, render_buffer.ebo);
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(GLfloat) * (next_index),
                     indices);
 
-    glBindBuffer(GL_ARRAY_BUFFER, render_vao.vbo_id);
+    glBindBuffer(GL_ARRAY_BUFFER, render_buffer.vbo);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * (next_vertex),
                     vertices);
 

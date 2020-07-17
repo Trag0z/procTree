@@ -27,7 +27,7 @@ void main() {
         out_position = gl_in[i].gl_Position + (center - gl_in[i].gl_Position) * 0.2 + In[i].normal * In[i].ext_length;
         
         out_normal = In[i].normal;
-        out_ext_length = 0.0;
+        out_ext_length = In[i].ext_length;
         EmitVertex();
     }
     EndPrimitive();

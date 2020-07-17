@@ -24,17 +24,20 @@ class Application {
     u32 last_frame_start, frame_start;
     u32 frame_delay = 60 / 1000;
 
-    GLuint construction_shader_id;
+    GLuint trunk_construction_shader_id;
+    GLuint tip_construction_shader_id;
     GLuint rendering_shader_id;
 
     GLuint input_uniform;
     GLuint output_uniform;
 
-    GLuint input_vao;
-    GLuint input_ebo;
-    GLuint input_vbo;
+    struct ElementArray {
+        GLuint vao, ebo, vbo;
+    };
 
-    GLuint feedback_vbo;
+    ElementArray input_buffer;
+    ElementArray feedback_buffer;
+    ElementArray render_buffer;
 
     struct {
         GLuint id, ebo_id, vbo_id;
