@@ -32,6 +32,10 @@ class Application {
 
     GLuint feedback_vbo;
 
+    struct {
+        GLuint id, ebo_id, vbo_id;
+    } render_vao;
+
     size_t next_vertex = 3;
     Vertex* vertices;
     const size_t max_vertices = 3 + MAX_BRANCHES() * 4;

@@ -21,7 +21,7 @@ void Application::init() {
     sdl_renderer = SDL_CreateRenderer(window, -1, 0);
 
     // Use OpenGL 3.3 core
-    const char* glsl_version = "#version 330 core";
+    // const char* glsl_version = "#version 330 core";
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
@@ -68,12 +68,12 @@ void Application::init() {
 #endif
 
     //          Setup ImGui context         //
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGui::StyleColorsDark();
+    // IMGUI_CHECKVERSION();
+    // ImGui::CreateContext();
+    // ImGui::StyleColorsDark();
 
-    ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
-    ImGui_ImplOpenGL3_Init(glsl_version);
+    // ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+    // ImGui_ImplOpenGL3_Init(glsl_version);
 
     //          Create shaders              //
     construction_shader_id =
@@ -87,6 +87,19 @@ void Application::init() {
     glGenVertexArrays(1, &input_vao);
     glBindVertexArray(input_vao);
 
+    // EBO
+    glGenBuffers(1, &input_ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, input_ebo);
+
+    indices = new GLuint[max_indices];
+    indices[0] = 0;
+    indices[1] = 1;
+    indices[2] = 2;
+
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * 3, indices,
+                 GL_STREAM_DRAW);
+
+    // VBO
     glGenBuffers(1, &input_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, input_vbo);
 
@@ -121,20 +134,9 @@ void Application::init() {
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * 4, nullptr, GL_STREAM_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * 3, vertices);
 
-    indices = new GLuint[max_indices];
-
-    indices[0] = 0;
-    indices[1] = 1;
-    indices[2] = 2;
-
-    glGenBuffers(1, &input_ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, input_ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * 3, indices,
-                 GL_STREAM_DRAW);
-
     glBindVertexArray(0);
 
-    //      Setup eedback vertex buffer     //
+    //      Setup feedback vertex buffer    //
     glGenBuffers(1, &feedback_vbo);
     glBindBuffer(GL_ARRAY_BUFFER, feedback_vbo);
 
@@ -155,12 +157,47 @@ void Application::init() {
 
     // Allocate
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * 3, nullptr, GL_STREAM_READ);
-    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, feedback_vbo);
+    // glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, feedback_vbo);
+
+    //      Setup render vertex array       //
+    glGenVertexArrays(1, &render_vao.id);
+    glBindVertexArray(render_vao.id);
+
+    // VBO
+    glGenBuffers(1, &render_vao.vbo_id);
+    glBindBuffer(GL_ARRAY_BUFFER, render_vao.vbo_id);
+
+    // position attribute
+    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          reinterpret_cast<void*>(0));
+    glEnableVertexAttribArray(0);
+
+    // normal attribute
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          reinterpret_cast<void*>(offsetof(Vertex, normal)));
+    glEnableVertexAttribArray(1);
+
+    // length attribute
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          reinterpret_cast<void*>(offsetof(Vertex, length)));
+    glEnableVertexAttribArray(2);
+
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * max_vertices, nullptr,
+                 GL_STREAM_DRAW);
+
+    // EBO
+    glGenBuffers(1, &render_vao.ebo_id);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, render_vao.ebo_id);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * max_indices, nullptr,
+                 GL_STREAM_DRAW);
+
+    glBindVertexArray(0);
 
     running = true;
 }
 
 void Application::run() {
+    // Geometry passes
     glUseProgram(construction_shader_id);
     glBindVertexArray(input_vao);
     glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, feedback_vbo);
@@ -206,8 +243,36 @@ void Application::run() {
     indices[next_index++] = last_triangle_start + 4;
     indices[next_index++] = last_triangle_start + 5;
 
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+    // Render
+    glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glUseProgram(rendering_shader_id);
+
+    // Update camera
+    glm::vec3 camera_pos = {0.0f, 3.0f, -6.0f};
+    glm::vec3 camera_target = {0.0f, 4.0f, 0.0f};
+    glm::mat4 projection =
+        glm::perspective(glm::radians(100.0f), 1920.0f / 1200.0f, -3.0f, 3.0f) * glm::lookAt(camera_pos, camera_target, { 0.0f, 1.0f, 0.0f });
+
+    GLuint uniform_id = glGetUniformLocation(rendering_shader_id, "projection");
+    glUniformMatrix4fv(uniform_id, 1, 0, value_ptr(projection));
+
+    // Update VAO data
+    glBindVertexArray(render_vao.id);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, render_vao.ebo_id);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(GLfloat) * (next_index),
+                    indices);
+
+    glBindBuffer(GL_ARRAY_BUFFER, render_vao.vbo_id);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * (next_vertex),
+                    vertices);
+
+    glDrawElements(GL_TRIANGLES, static_cast<GLsizei>(next_index),
+                   GL_UNSIGNED_INT, 0);
 
     SDL_GL_SwapWindow(window);
+
+    SDL_TriggerBreakpoint();
 }

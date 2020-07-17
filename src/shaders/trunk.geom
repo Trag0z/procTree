@@ -19,9 +19,9 @@ out float out_ext_length;
 
 void main() {
     for (int i = 0; i < 3; i++) {
-        out_position = gl_in[i].gl_Position; // + normal * ext_length;
+        out_position = gl_in[i].gl_Position + In[i].normal * In[i].ext_length;
         out_normal = In[i].normal;
-        out_ext_length = In[i].ext_length;
+        out_ext_length = 0.0;
         EmitVertex();
     }
     EndPrimitive();
