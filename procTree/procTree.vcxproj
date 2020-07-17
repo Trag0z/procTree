@@ -149,6 +149,7 @@
     <ClCompile Include="..\src\pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\src\Shaders.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\imgui\imconfig.h" />
@@ -163,6 +164,7 @@
     <ClInclude Include="..\src\DebugCallback.h" />
     <ClInclude Include="..\src\Game.h" />
     <ClInclude Include="..\src\pch.h" />
+    <ClInclude Include="..\src\Shaders.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

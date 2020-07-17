@@ -25,7 +25,6 @@
 
 #include <sdl/SDL.h>
 #include <sdl/SDL_image.h>
-#include <sdl/SDL_ttf.h>
 
 #include <imgui/imgui.h>
 #include <imgui/imgui_impl_sdl.h>
