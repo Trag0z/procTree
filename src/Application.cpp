@@ -110,9 +110,9 @@ void Application::init() {
     vertices[1].position = {1.0f, 0.0f, 1.0f, 1.0f};
     vertices[2].position = {0.0f, 0.0f, -1.0f, 1.0f};
 
-    vertices[0].normal = {0.0f, 1.0f, 0.0f, 1.0f};
-    vertices[1].normal = {0.0f, 1.0f, 0.0f, 1.0f};
-    vertices[2].normal = {0.0f, 1.0f, 0.0f, 1.0f};
+    vertices[0].normal = {0.0f, 1.0f, 0.0f, 0.0f};
+    vertices[1].normal = {0.0f, 1.0f, 0.0f, 0.0f};
+    vertices[2].normal = {0.0f, 1.0f, 0.0f, 0.0f};
 
     vertices[0].length = 5.0f;
     vertices[1].length = 5.0f;
@@ -143,15 +143,15 @@ void Application::init() {
                           reinterpret_cast<void*>(0));
     glEnableVertexAttribArray(0);
 
-    // // normal attribute
-    // glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-    //                       reinterpret_cast<void*>(offsetof(Vertex, normal)));
-    // glEnableVertexAttribArray(1);
+    // normal attribute
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          reinterpret_cast<void*>(offsetof(Vertex, normal)));
+    glEnableVertexAttribArray(1);
 
-    // // length attribute
-    // glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-    //                       reinterpret_cast<void*>(offsetof(Vertex, length)));
-    // glEnableVertexAttribArray(2);
+    // length attribute
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          reinterpret_cast<void*>(offsetof(Vertex, length)));
+    glEnableVertexAttribArray(2);
 
     // Allocate
     glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * 3, nullptr, GL_STREAM_READ);
