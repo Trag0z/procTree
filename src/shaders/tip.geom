@@ -3,10 +3,9 @@ layout (triangles) in;
 layout (points, max_vertices = 3) out;
 
 in block {
-    vec4 position;
     vec4 normal;
     float ext_length;
-} in_vertices[];
+} In[];
 
 out feedback {
     vec4 position;

@@ -1,6 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "Shaders.h"
+#include "Types.h"
 
 struct Vertex;
 
@@ -19,6 +20,9 @@ class Application {
     SDL_Window* window;
     SDL_Renderer* sdl_renderer;
     SDL_GLContext gl_context;
+
+    u32 last_frame_start, frame_start;
+    u32 frame_delay = 60 / 1000;
 
     GLuint construction_shader_id;
     GLuint rendering_shader_id;
@@ -39,14 +43,24 @@ class Application {
     size_t next_vertex = 3;
     Vertex* vertices;
     const size_t max_vertices = 3 + MAX_BRANCHES() * 4;
-    // std::array<Vertex, 3 + MAX_BRANCHES() * 4> vertices;
 
     size_t next_index = 3;
     GLuint* indices;
     const size_t max_indices = 3 + MAX_BRANCHES() * 3 * 9;
-    // std::array<GLfloat, 3 + MAX_BRANCHES() * 3 * 9> indices;
 
     const size_t max_geometry_iterations = 10;
+
+    struct {
+        int x, y;
+        int last_x, last_y;
+        u32 button_state;
+    } mouse;
+
+    struct {
+        float rotation = 0.0f;
+        glm::vec3 pos = {0.0f, 3.0f, -6.0f};
+        glm::vec3 target = {0.0f, 4.0f, 0.0f};
+    } camera;
 
   public:
     bool running = false;

@@ -1,11 +1,14 @@
 NEXT:
-
+- do the tip
+- start to iterate
 
 TODO:
-
+- geometry iterations
+- texture
 
 Bugs:               (@BUG)
 
 Cleanup:            (@CLEANUP)
 
 Optimizations:      (@OPTIMIZE)
+- can everything be done in GPU arrays?

@@ -12,10 +12,9 @@ void Application::init() {
     SDL_assert_always(SDL_Init(SDL_INIT_EVERYTHING) == 0);
     // SDL_assert_always(IMG_Init(IMG_INIT_PNG) != 0);
 
-    window =
-        SDL_CreateWindow("procTree", 3840, 956, 0, 0,
-                         SDL_WINDOW_ALLOW_HIGHDPI |
-                             SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow("procTree", 3840, 956, 1920, 1200,
+                              SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS |
+                                  SDL_WINDOW_OPENGL);
     SDL_assert_always(window);
 
     sdl_renderer = SDL_CreateRenderer(window, -1, 0);
@@ -197,6 +196,29 @@ void Application::init() {
 }
 
 void Application::run() {
+    last_frame_start = frame_start;
+    frame_start = SDL_GetTicks();
+
+    SDL_PumpEvents();
+
+    SDL_Event event;
+    while (SDL_PollEvent(&event)) {
+        // ImGui_ImplSDL2_ProcessEvent(&event);
+        if (event.type == SDL_QUIT ||
+            (event.type == SDL_KEYDOWN &&
+             event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) ||
+            (event.type == SDL_WINDOWEVENT &&
+             event.window.event == SDL_WINDOWEVENT_CLOSE &&
+             event.window.windowID == SDL_GetWindowID(window))) {
+            running = false;
+        }
+    }
+
+    // Update mouse
+    mouse.last_x = mouse.x;
+    mouse.last_y = mouse.y;
+    mouse.button_state = SDL_GetMouseState(&mouse.x, &mouse.y);
+
     // Geometry passes
     glUseProgram(construction_shader_id);
     glBindVertexArray(input_vao);
@@ -207,6 +229,8 @@ void Application::run() {
     glEndTransformFeedback();
 
     glFlush();
+
+    // Copy vertices to CPU memory
     glGetBufferSubData(GL_TRANSFORM_FEEDBACK_BUFFER, 0, sizeof(Vertex) * 3,
                        &vertices[next_vertex]);
     next_vertex += 3;
@@ -214,6 +238,7 @@ void Application::run() {
     SDL_assert(indices[next_index - 3] + 1 == indices[next_index - 2] &&
                indices[next_index - 3] + 2 == indices[next_index - 1]);
 
+    // Add new indices
     GLuint last_triangle_start = indices[next_index - 3];
     indices[next_index++] = last_triangle_start + 0;
     indices[next_index++] = last_triangle_start + 3;
@@ -250,10 +275,15 @@ void Application::run() {
     glUseProgram(rendering_shader_id);
 
     // Update camera
-    glm::vec3 camera_pos = {0.0f, 3.0f, -6.0f};
-    glm::vec3 camera_target = {0.0f, 4.0f, 0.0f};
+    if (mouse.button_state & SDL_BUTTON(SDL_BUTTON_LEFT)) {
+        const float sensitivity = 0.1f;
+        camera.rotation += (mouse.x - mouse.last_x) * sensitivity;
+    }
+
     glm::mat4 projection =
-        glm::perspective(glm::radians(100.0f), 1920.0f / 1200.0f, -3.0f, 3.0f) * glm::lookAt(camera_pos, camera_target, { 0.0f, 1.0f, 0.0f });
+        glm::perspective(glm::radians(100.0f), 1920.0f / 1200.0f, -3.0f, 3.0f) *
+        glm::rotate(glm::lookAt(camera.pos, camera.target, {0.0f, 1.0f, 0.0f}),
+                    camera.rotation, {0.0f, 1.0f, 0.0f});
 
     GLuint uniform_id = glGetUniformLocation(rendering_shader_id, "projection");
     glUniformMatrix4fv(uniform_id, 1, 0, value_ptr(projection));
@@ -274,5 +304,8 @@ void Application::run() {
 
     SDL_GL_SwapWindow(window);
 
-    SDL_TriggerBreakpoint();
+    // Wait for next frame
+    u32 last_frame_time = SDL_GetTicks() - frame_start;
+    if (frame_delay > last_frame_time)
+        SDL_Delay(frame_delay - last_frame_time);
 }
