@@ -24,7 +24,7 @@ class Application {
     u32 last_frame_start, frame_start;
     u32 frame_delay = 60 / 1000;
 
-    GLuint trunk_construction_shader_id;
+    GLuint construction_shader_id;
     GLuint tip_construction_shader_id;
     GLuint rendering_shader_id;
 
@@ -36,7 +36,7 @@ class Application {
     };
 
     ElementArray input_buffer;
-    ElementArray feedback_buffer;
+    ElementArray feedback_buffer[2];
     ElementArray render_buffer;
 
     struct {
@@ -64,6 +64,8 @@ class Application {
         glm::vec3 pos = {0.0f, 3.0f, -6.0f};
         glm::vec3 target = {0.0f, 4.0f, 0.0f};
     } camera;
+
+    void create_tree_indices(GLuint num_trees);
 
   public:
     bool running = false;
