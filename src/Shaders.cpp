@@ -1,6 +1,7 @@
 #pragma once
 #include "pch.h"
 #include "Shaders.h"
+#include "Vertex.h"
 
 static bool checkCompileErrors(GLuint object, bool program) {
     GLint success;

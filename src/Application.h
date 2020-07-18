@@ -2,14 +2,15 @@
 #include "pch.h"
 #include "Shaders.h"
 #include "Types.h"
+#include "Vertex.h"
 
 struct Vertex;
 
 namespace {
-constexpr size_t MAX_GEOMETRY_ITERATIONS = 10;
-constexpr size_t MAX_BRANCHES() {
-    size_t ret = 1;
-    for (size_t i = 0; i < MAX_GEOMETRY_ITERATIONS - 1; ++i) {
+constexpr GLuint MAX_GEOMETRY_ITERATIONS = 10;
+constexpr GLuint MAX_BRANCHES() {
+    GLuint ret = 1;
+    for (GLuint i = 0; i < MAX_GEOMETRY_ITERATIONS - 1; ++i) {
         ret *= 3;
     }
     return ret + 1;
@@ -28,30 +29,17 @@ class Application {
     GLuint tip_construction_shader_id;
     GLuint rendering_shader_id;
 
-    GLuint input_uniform;
-    GLuint output_uniform;
+    ArrayBuffer render_vbo, feedback_vbo, ebo;
+    VertexArray render_vao, feedback_vao;
 
-    struct ElementArray {
-        GLuint vao, ebo, vbo;
-    };
-
-    ElementArray input_buffer;
-    ElementArray feedback_buffer[2];
-    ElementArray render_buffer;
-
-    struct {
-        GLuint id, ebo_id, vbo_id;
-    } render_vao;
-
-    size_t next_vertex = 3;
     Vertex* vertices;
-    const size_t max_vertices = 3 + MAX_BRANCHES() * 4;
+    const GLuint max_vertices = 3 + MAX_BRANCHES() * 4;
 
-    size_t next_index = 3;
+    GLuint num_indices;
     GLuint* indices;
-    const size_t max_indices = 3 + MAX_BRANCHES() * 3 * 9;
+    const GLuint max_indices = 3 + MAX_BRANCHES() * 3 * 9;
 
-    const size_t max_geometry_iterations = 10;
+    const GLuint max_geometry_iterations = 10;
 
     struct {
         int x, y;
@@ -64,6 +52,8 @@ class Application {
         glm::vec3 pos = {0.0f, 3.0f, -6.0f};
         glm::vec3 target = {0.0f, 4.0f, 0.0f};
     } camera;
+
+    bool run_geometry_pass = true;
 
     void create_tree_indices(GLuint num_trees);
 

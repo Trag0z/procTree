@@ -15,14 +15,12 @@ in block{
 // } out_vertex;
 
 out vec4 out_position;
-// out vec4 out_normal;
 out float out_ext_length;
 
 void main(){
     // Return triangle as is
     for(int i=0;i<3;i++){
         out_position=In[i].position
-        // out_normal=In[i].normal;
         out_ext_length=In[i].ext_length;
         EmitVertex();
     }

@@ -86,84 +86,34 @@ void Application::init() {
     rendering_shader_id = load_and_compile_shader_from_file(
         "../src/shaders/render.vert", nullptr, "../src/shaders/render.frag");
 
-    //      Setup input vertex buffer        //
-    glGenVertexArrays(1, &input_buffer.vao);
-    glBindVertexArray(input_buffer.vao);
+    //          Setup buffers               //
+    render_vbo = ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_DRAW,
+                             sizeof(Vertex) * max_vertices);
+    feedback_vbo = ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_READ,
+                               sizeof(Vertex) * max_vertices);
+    ebo = ArrayBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_STREAM_DRAW,
+                      sizeof(Vertex) * max_indices);
 
-    // EBO
-    glGenBuffers(1, &input_buffer.ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, input_buffer.ebo);
+    render_vao = VertexArray(render_vbo, ebo);
+    feedback_vao = VertexArray(feedback_vbo, ebo);
+
+    //          Initial data                //
+    vertices = new Vertex[max_vertices];
+    vertices[0].position = {-1.0f, 0.0f, 1.0f, 1.0f};
+    vertices[1].position = {1.0f, 0.0f, 1.0f, 1.0f};
+    vertices[2].position = {0.0f, 0.0f, -1.0f, 1.0f};
+
+    vertices[0].length = 5.0f;
+    vertices[1].length = 5.0f;
+    vertices[2].length = 5.0f;
 
     indices = new GLuint[max_indices];
     indices[0] = 0;
     indices[1] = 1;
     indices[2] = 2;
 
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * 3, indices,
-                 GL_STATIC_DRAW);
-
-    // VBO
-    glGenBuffers(1, &input_buffer.vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, input_buffer.vbo);
-
-    // position attribute
-    glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                          reinterpret_cast<void*>(0));
-    glEnableVertexAttribArray(0);
-
-    // length attribute
-    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                          reinterpret_cast<void*>(offsetof(Vertex, length)));
-    glEnableVertexAttribArray(2);
-
-    vertices = new Vertex[max_vertices];
-    vertices[0].position = {-1.0f, 0.0f, 1.0f, 1.0f};
-    vertices[1].position = {1.0f, 0.0f, 1.0f, 1.0f};
-    vertices[2].position = {0.0f, 0.0f, -1.0f, 1.0f};
-
-    vertices[0].normal = {0.0f, 1.0f, 0.0f, 0.0f};
-    vertices[1].normal = {0.0f, 1.0f, 0.0f, 0.0f};
-    vertices[2].normal = {0.0f, 1.0f, 0.0f, 0.0f};
-
-    vertices[0].length = 5.0f;
-    vertices[1].length = 5.0f;
-    vertices[2].length = 5.0f;
-
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * 4, nullptr, GL_STATIC_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * 3, vertices);
-
-    //      Setup feedback buffers         //
-    for (size_t i = 0; i < 2; ++i) {
-        glGenVertexArrays(1, &feedback_buffer[i].vao);
-        glBindVertexArray(feedback_buffer[i].vao);
-
-        // VBO
-        glGenBuffers(1, &feedback_buffer[i].vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, feedback_buffer[i].vbo);
-
-        // position attribute
-        glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(glm::vec4),
-                              reinterpret_cast<void*>(0));
-        glEnableVertexAttribArray(0);
-
-        // length attribute
-        glVertexAttribPointer(
-            2, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-            reinterpret_cast<void*>(offsetof(Vertex, length)));
-        glEnableVertexAttribArray(2);
-
-        // Allocate
-        glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * max_vertices, nullptr,
-                     GL_STREAM_COPY);
-
-        // EBO
-        glGenBuffers(1, &render_buffer.ebo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, render_buffer.ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * max_indices,
-                     nullptr, GL_STREAM_COPY);
-    }
-
-    glBindVertexArray(0);
+    render_vbo.write_data(sizeof(Vertex) * 3, vertices);
+    ebo.write_data(sizeof(GLuint) * 3, indices);
 
     running = true;
 }
@@ -192,21 +142,32 @@ void Application::run() {
     mouse.last_y = mouse.y;
     mouse.button_state = SDL_GetMouseState(&mouse.x, &mouse.y);
 
-    //          First Geometry pass          //
-    glUseProgram(construction_shader_id);
+    if (run_geometry_pass) {
+        //          First Geometry pass          //
+        glUseProgram(construction_shader_id);
 
-    glBindVertexArray(input_buffer.vao);
+        render_vao.bind();
+        feedback_vbo.set_as_feedback_target();
 
-    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, feedback_buffer[0].vbo);
+        glBeginTransformFeedback(GL_POINTS);
+        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+        glEndTransformFeedback();
 
-    glBeginTransformFeedback(GL_TRIANGLES);
-    glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
-    glEndTransformFeedback();
+        glFlush();
 
-    glFlush();
+        // create_tree_indices(1);
 
-    glBindVertexArray(feedback_buffer[0].vao);
-    create_tree_indices(1);
+        run_geometry_pass = false;
+
+        // Load data into CPU memory
+        feedback_vbo.read_data(sizeof(Vertex) * max_vertices, vertices);
+
+        render_vbo.write_data(sizeof(Vertex) * max_vertices, vertices);
+
+        GLuint new_indices[] = {0, 1, 2};
+        num_indices = sizeof(new_indices) / sizeof(GLfloat);
+        ebo.write_data(sizeof(GLuint) * num_indices, new_indices);
+    }
 
     // Render
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
@@ -227,8 +188,8 @@ void Application::run() {
     GLuint uniform_id = glGetUniformLocation(rendering_shader_id, "projection");
     glUniformMatrix4fv(uniform_id, 1, 0, value_ptr(projection));
 
-    glDrawElements(GL_TRIANGLE_STRIP, static_cast<GLsizei>(7), GL_UNSIGNED_INT,
-                   0);
+    render_vao.bind();
+    glDrawElements(GL_TRIANGLE_STRIP, num_indices, GL_UNSIGNED_INT, 0);
 
     SDL_GL_SwapWindow(window);
 
@@ -242,14 +203,14 @@ void Application::create_tree_indices(GLuint num_branches) {
     const GLuint start_indices[] = {0, 1, 2, 5, 0, 3, 1, 4, 5, 6, 3, 4};
     const GLuint indices_per_branch = sizeof(start_indices) / sizeof(GLfloat);
 
-    GLuint num_written = 0;
+    num_indices = 0;
     for (GLuint current_branches = 0; current_branches < num_branches;
          ++current_branches) {
         for (GLuint i = 0; i < indices_per_branch; ++i) {
-            indices[num_written++] =
+            indices[num_indices++] =
                 start_indices[i] + indices_per_branch * current_branches;
         }
     }
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(GLfloat) * num_written,
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(GLfloat) * num_indices,
                     indices);
 }
