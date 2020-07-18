@@ -149,7 +149,7 @@ void Application::run() {
         render_vao.bind();
         feedback_vbo.set_as_feedback_target();
 
-        glBeginTransformFeedback(GL_POINTS);
+        glBeginTransformFeedback(GL_TRIANGLES);
         glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
         glEndTransformFeedback();
 
@@ -164,7 +164,7 @@ void Application::run() {
 
         render_vbo.write_data(sizeof(Vertex) * max_vertices, vertices);
 
-        GLuint new_indices[] = {0, 1, 2};
+        GLuint new_indices[] = {0, 1, 2, 5, 0, 3, 1, 4, 5, 6, 3, 4};
         num_indices = sizeof(new_indices) / sizeof(GLfloat);
         ebo.write_data(sizeof(GLuint) * num_indices, new_indices);
     }
