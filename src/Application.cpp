@@ -205,10 +205,11 @@ void Application::run() {
         object_rotation += (mouse.x - mouse.last_x) * sensitivity;
     }
 
-    glm::mat4 projection =
-        glm::perspective(glm::radians(100.0f), 1920.0f / 1200.0f, -3.0f, 3.0f);
+    const glm::mat4 projection =
+        glm::perspective(glm::radians(100.0f), 1920.0f / 1200.0f, 0.1f, 10.0f);
 
-    glm::mat4 view = glm::lookAt(camera.pos, camera.target, {0.0f, 1.0f, 0.0f});
+    const glm::mat4 view =
+        glm::lookAt(camera.pos, camera.target, {0.0f, 1.0f, 0.0f});
 
     glm::mat4 model =
         glm::rotate(glm::mat4(1.0f), object_rotation, {0.0f, 1.0f, 0.0f});
@@ -219,8 +220,7 @@ void Application::run() {
         glGetUniformLocation(rendering_shader_id, "projection");
     glUniformMatrix4fv(projection_id, 1, 0, value_ptr(projection));
 
-    GLuint view_id =
-        glGetUniformLocation(rendering_shader_id, "view");
+    GLuint view_id = glGetUniformLocation(rendering_shader_id, "view");
     glUniformMatrix4fv(view_id, 1, 0, value_ptr(view));
 
     GLuint model_id = glGetUniformLocation(rendering_shader_id, "model");

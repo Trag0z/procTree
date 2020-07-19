@@ -49,7 +49,7 @@ class Application {
 
     float object_rotation = 0.0f;
     struct {
-        glm::vec3 pos = {0.0f, 3.0f, -6.0f};
+        glm::vec3 pos = {0.0f, 5.0f, -6.0f};
         glm::vec3 target = {0.0f, 4.0f, 0.0f};
     } camera;
 
