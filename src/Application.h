@@ -49,9 +49,11 @@ class Application {
 
     float object_rotation = 0.0f;
     struct {
-        glm::vec3 pos = {0.0f, 5.0f, -6.0f};
-        glm::vec3 target = {0.0f, 4.0f, 0.0f};
+        glm::vec3 pos = {0.0f, 7.0f, 6.0f};
+        glm::vec3 target = {0.0f, 5.0f, 0.0f};
     } camera;
+
+    glm::vec3 light_position = {4.0f, 11.0f, 5.0f};
 
     bool render_model = true;
     bool render_wireframes = true;
@@ -59,8 +61,7 @@ class Application {
 
     bool run_geometry_pass = true;
 
-    u32 debug_triangle_indices[3] = {0, 1, 2};
-    // glm::uvec3 debug_triangle_indices = glm::uvec3(0);
+    glm::uvec3 debug_triangle_indices = glm::uvec3(0);
 
   public:
     bool running = false;

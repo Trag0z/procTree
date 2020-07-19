@@ -100,9 +100,9 @@ void Application::init() {
 
     //          Initial data                //
     vertices = new Vertex[max_vertices];
-    vertices[0].position = {-1.0f, 0.0f, 1.0f, 1.0f};
-    vertices[1].position = {1.0f, 0.0f, 1.0f, 1.0f};
-    vertices[2].position = {0.0f, 0.0f, -1.0f, 1.0f};
+    vertices[0].position = {-1.0f, 0.0f, -1.0f, 1.0f};
+    vertices[1].position = {1.0f, 0.0f, -1.0f, 1.0f};
+    vertices[2].position = {0.0f, 0.0f, 1.0f, 1.0f};
 
     vertices[0].normal = {0.0f, 1.0f, 0.0f, 1.0f};
     vertices[1].normal = {0.0f, 1.0f, 0.0f, 1.0f};
@@ -187,7 +187,10 @@ void Application::run() {
 
         NewLine();
         Text("Debug triangle indices");
-        InputScalarN("Indices", ImGuiDataType_U32, debug_triangle_indices, 3);
+        InputScalarN("Indices", ImGuiDataType_U32, &debug_triangle_indices, 3);
+
+        NewLine();
+        DragFloat3("Light position", value_ptr(light_position), 0.2f);
 
         End();
     }
@@ -224,20 +227,15 @@ void Application::run() {
     glClear(GL_COLOR_BUFFER_BIT);
 
     // Update camera
-    if (mouse.button_state & SDL_BUTTON(SDL_BUTTON_LEFT)) {
-        const float sensitivity = 0.1f;
+    if (mouse.button_state & SDL_BUTTON(SDL_BUTTON_RIGHT)) {
+        const float sensitivity = 0.03f;
         object_rotation += (mouse.x - mouse.last_x) * sensitivity;
     }
 
     ebo.write_data(sizeof(glm::uvec3) * num_triangles, triangle_indices);
 
     glm::mat4 projection =
-        // glm::ortho(8.0f, -8.0f, -5.0f, 5.0f, 0.1f, 10.0f);
-        glm::perspective(glm::radians(100.0f), 1920.0f / 1200.0f, 0.1f, 10.0f);
-
-    // For some reason, the perspective matrix seems to switch the direction of
-    // the x-axis, so we reverse it again here
-    projection = glm::scale(projection, {-1.0, 1.0, 1.0});
+        glm::perspective(glm::radians(100.0f), 1920.0f / 1200.0f, 0.1f, 100.0f);
 
     const glm::mat4 view =
         glm::lookAt(camera.pos, camera.target, {0.0f, 1.0f, 0.0f});
@@ -258,6 +256,9 @@ void Application::run() {
         GLuint model_id = glGetUniformLocation(shaders.render, "model");
         glUniformMatrix4fv(model_id, 1, 0, value_ptr(model));
 
+        GLuint light_pos_id = glGetUniformLocation(shaders.render, "light_pos");
+        glUniform3fv(light_pos_id, 1, value_ptr(light_position));
+
         render_vao.bind();
         glDrawElements(GL_TRIANGLES, num_triangles * 3, GL_UNSIGNED_INT, 0);
     }
@@ -265,13 +266,13 @@ void Application::run() {
     // Debug rendering
     glUseProgram(shaders.line);
 
-    GLuint projection_id = glGetUniformLocation(shaders.render, "projection");
+    GLuint projection_id = glGetUniformLocation(shaders.line, "projection");
     glUniformMatrix4fv(projection_id, 1, 0, value_ptr(projection));
 
-    GLuint view_id = glGetUniformLocation(shaders.render, "view");
+    GLuint view_id = glGetUniformLocation(shaders.line, "view");
     glUniformMatrix4fv(view_id, 1, 0, value_ptr(view));
 
-    GLuint model_id = glGetUniformLocation(shaders.render, "model");
+    GLuint model_id = glGetUniformLocation(shaders.line, "model");
     glUniformMatrix4fv(model_id, 1, 0, value_ptr(model));
 
     if (render_wireframes) {

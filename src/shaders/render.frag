@@ -5,14 +5,16 @@ in vec3 normal;
 
 out vec4 color;
 
+uniform vec3 light_pos;
+
 void main()
 {
     vec4 object_color=vec4(.4863,.3647,.1059,1.);
     
     // ambient light
-    vec3 ambient=vec3(.15);;
+    vec3 ambient=vec3(.2);;
     
-    vec3 light_pos=vec3(-5.,8.,5.);
+    // vec3 light_pos=vec3(4.,6.,5.);
     
     vec3 light_dir=normalize(light_pos-pos);
     

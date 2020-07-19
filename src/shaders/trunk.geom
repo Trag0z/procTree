@@ -22,7 +22,7 @@ void main(){
     }
     
     // Create extruded triangle
-    vec4 surface_normal=vec4(normalize(cross(vec3(gl_in[1].gl_Position-gl_in[0].gl_Position),vec3(gl_in[2].gl_Position-gl_in[0].gl_Position))),0.f);
+    vec4 surface_normal=vec4(normalize(cross(vec3(gl_in[1].gl_Position-gl_in[0].gl_Position),vec3(gl_in[2].gl_Position-gl_in[0].gl_Position))),0.f)*-1.;
     float shrink_factor=.2;
     
     for(int i=0;i<3;i++){

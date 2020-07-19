@@ -1,12 +1,13 @@
 NEXT:
 - start to iterate
 
+- sort out coordinate system handedness stuff
+
 TODO:
 - geometry iterations
 - texture
 
 Bugs:               (@BUG)
-- triangles facing towards the camera are not rendered
 
 Cleanup:            (@CLEANUP)
 
