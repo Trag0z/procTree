@@ -47,15 +47,13 @@ class Application {
         u32 button_state;
     } mouse;
 
+    float object_rotation = 0.0f;
     struct {
-        float rotation = 0.0f;
         glm::vec3 pos = {0.0f, 3.0f, -6.0f};
         glm::vec3 target = {0.0f, 4.0f, 0.0f};
     } camera;
 
     bool run_geometry_pass = true;
-
-    void create_tree_indices(GLuint num_trees);
 
   public:
     bool running = false;

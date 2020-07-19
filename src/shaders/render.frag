@@ -12,7 +12,9 @@ void main()
     
     vec4 light_dir=normalize(light_pos-pos);
     
-    float cos_theta=clamp(dot(normal,light_dir),0.,1.);
+    // float cos_theta=clamp(dot(normal,light_dir),0.,1.);
     
-    color=vec4(default_color.rgb*cos_theta,default_color.a);
+    float diff=max(dot(normal,light_dir),0.);
+    
+    color=vec4(default_color.rgb*diff,1.);
 }

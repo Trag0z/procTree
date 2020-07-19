@@ -116,6 +116,34 @@ void Application::init() {
     running = true;
 }
 
+static GLuint create_tree_indices(GLuint num_branches, glm::uvec3* triangles) {
+    const glm::uvec3 start_indices[] = {{0, 1, 2}, {0, 3, 1}, {1, 3, 4},
+                                        {4, 5, 1}, {1, 5, 2}, {2, 5, 3},
+                                        {3, 0, 2}};
+
+    const glm::uvec3 tip_indices[] = {{3, 6, 4}, {4, 6, 5}, {5, 6, 3}};
+
+    const GLuint triangles_per_branch =
+        sizeof(start_indices) / sizeof(glm::uvec3);
+
+    GLuint num_triangles = 0;
+    // GLuint num_tips = 1; // TODO: calculate
+    for (GLuint current_branches = 0; current_branches < num_branches;
+         ++current_branches) {
+        for (GLuint i = 0; i < triangles_per_branch; ++i) {
+            triangles[num_triangles++] =
+                start_indices[i] + triangles_per_branch * current_branches;
+        }
+        // Add tip
+        for (auto vec : tip_indices) {
+            triangles[num_triangles++] =
+                vec + triangles_per_branch * current_branches;
+        }
+    }
+
+    return num_triangles;
+}
+
 void Application::run() {
     last_frame_start = frame_start;
     frame_start = SDL_GetTicks();
@@ -163,12 +191,8 @@ void Application::run() {
 
         render_vbo.write_data(sizeof(Vertex) * max_vertices, vertices);
 
-        create_tree_indices(1);
+        num_triangles = create_tree_indices(1, triangle_indices);
         ebo.write_data(sizeof(glm::uvec3) * num_triangles, triangle_indices);
-
-        // GLuint new_indices[] = {0, 1, 2, 5, 0, 3, 1, 4, 5, 6, 3, 4};
-        // num_triangles = sizeof(new_indices) / sizeof(GLfloat);
-        // ebo.write_data(sizeof(GLuint) * num_triangles, new_indices);
     }
 
     // Render
@@ -178,17 +202,29 @@ void Application::run() {
     // Update camera
     if (mouse.button_state & SDL_BUTTON(SDL_BUTTON_LEFT)) {
         const float sensitivity = 0.1f;
-        camera.rotation += (mouse.x - mouse.last_x) * sensitivity;
+        object_rotation += (mouse.x - mouse.last_x) * sensitivity;
     }
 
     glm::mat4 projection =
-        glm::perspective(glm::radians(100.0f), 1920.0f / 1200.0f, -3.0f, 3.0f) *
-        glm::rotate(glm::lookAt(camera.pos, camera.target, {0.0f, 1.0f, 0.0f}),
-                    camera.rotation, {0.0f, 1.0f, 0.0f});
+        glm::perspective(glm::radians(100.0f), 1920.0f / 1200.0f, -3.0f, 3.0f);
+
+    glm::mat4 view = glm::lookAt(camera.pos, camera.target, {0.0f, 1.0f, 0.0f});
+
+    glm::mat4 model =
+        glm::rotate(glm::mat4(1.0f), object_rotation, {0.0f, 1.0f, 0.0f});
 
     glUseProgram(rendering_shader_id);
-    GLuint uniform_id = glGetUniformLocation(rendering_shader_id, "projection");
-    glUniformMatrix4fv(uniform_id, 1, 0, value_ptr(projection));
+
+    GLuint projection_id =
+        glGetUniformLocation(rendering_shader_id, "projection");
+    glUniformMatrix4fv(projection_id, 1, 0, value_ptr(projection));
+
+    GLuint view_id =
+        glGetUniformLocation(rendering_shader_id, "view");
+    glUniformMatrix4fv(view_id, 1, 0, value_ptr(view));
+
+    GLuint model_id = glGetUniformLocation(rendering_shader_id, "model");
+    glUniformMatrix4fv(model_id, 1, 0, value_ptr(model));
 
     render_vao.bind();
     glDrawElements(GL_TRIANGLES, num_triangles * 3, GL_UNSIGNED_INT, 0);
@@ -200,30 +236,4 @@ void Application::run() {
     u32 last_frame_time = SDL_GetTicks() - frame_start;
     if (frame_delay > last_frame_time)
         SDL_Delay(frame_delay - last_frame_time);
-}
-
-void Application::create_tree_indices(GLuint num_branches) {
-    const glm::uvec3 start_indices[] = {{0, 1, 2}, {0, 3, 1}, {1, 3, 4},
-                                        {4, 5, 1}, {1, 5, 2}, {2, 5, 3},
-                                        {3, 0, 2}};
-
-    const glm::uvec3 tip_indices[] = {{3, 6, 4}, {4, 6, 5}, {5, 6, 3}};
-
-    const GLuint triangles_per_branch =
-        sizeof(start_indices) / sizeof(glm::uvec3);
-
-    num_triangles = 0;
-    // GLuint num_tips = 1; // TODO: calculate
-    for (GLuint current_branches = 0; current_branches < num_branches;
-         ++current_branches) {
-        for (GLuint i = 0; i < triangles_per_branch; ++i) {
-            triangle_indices[num_triangles++] =
-                start_indices[i] + triangles_per_branch * current_branches;
-        }
-        // Add tip
-        for (auto vec : tip_indices) {
-            triangle_indices[num_triangles++] =
-                vec + triangles_per_branch * current_branches;
-        }
-    }
 }
