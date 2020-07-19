@@ -12,7 +12,7 @@ void main()
     // ambient light
     vec3 ambient=vec3(.15);;
     
-    vec3 light_pos=vec3(5.,5.,4.);
+    vec3 light_pos=vec3(-5.,8.,5.);
     
     vec3 light_dir=normalize(light_pos-pos);
     

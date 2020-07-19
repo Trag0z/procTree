@@ -122,12 +122,9 @@ void Application::init() {
 }
 
 static GLuint create_tree_indices(GLuint num_branches, glm::uvec3* triangles) {
-    const glm::uvec3 start_indices[] = {/*{0, 1, 2},*/ {0, 1, 3},
-                                        {3, 1, 4},
-                                        {4, 1, 2},
-                                        {4, 2, 5},
-                                        {5, 2, 0},
-                                        {5, 0, 3}};
+    const glm::uvec3 start_indices[] = {{0, 1, 2}, {0, 3, 1}, {1, 3, 4},
+                                        {1, 4, 2}, {2, 4, 5}, {2, 5, 0},
+                                        {0, 5, 3}};
 
     const glm::uvec3 tip_indices[] = {{3, 6, 4}, {4, 6, 5}, {5, 6, 3}};
 
@@ -156,11 +153,15 @@ void Application::run() {
     last_frame_start = frame_start;
     frame_start = SDL_GetTicks();
 
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplSDL2_NewFrame(window);
+    ImGui::NewFrame();
+
     SDL_PumpEvents();
 
     SDL_Event event;
     while (SDL_PollEvent(&event)) {
-        // ImGui_ImplSDL2_ProcessEvent(&event);
+        ImGui_ImplSDL2_ProcessEvent(&event);
         if (event.type == SDL_QUIT ||
             (event.type == SDL_KEYDOWN &&
              event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) ||
@@ -178,13 +179,16 @@ void Application::run() {
 
     { // Update gui
         using namespace ImGui;
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplSDL2_NewFrame(window);
-        ImGui::NewFrame();
 
         Begin("Debug control", NULL, ImGuiWindowFlags_NoTitleBar);
         Checkbox("Render model", &render_model);
         Checkbox("Render wireframes", &render_wireframes);
+        Checkbox("Render debug triangle", &render_debug_triangle);
+
+        NewLine();
+        Text("Debug triangle indices");
+        InputScalarN("Indices", ImGuiDataType_U32, debug_triangle_indices, 3);
+
         End();
     }
 
@@ -225,8 +229,15 @@ void Application::run() {
         object_rotation += (mouse.x - mouse.last_x) * sensitivity;
     }
 
-    const glm::mat4 projection =
+    ebo.write_data(sizeof(glm::uvec3) * num_triangles, triangle_indices);
+
+    glm::mat4 projection =
+        // glm::ortho(8.0f, -8.0f, -5.0f, 5.0f, 0.1f, 10.0f);
         glm::perspective(glm::radians(100.0f), 1920.0f / 1200.0f, 0.1f, 10.0f);
+
+    // For some reason, the perspective matrix seems to switch the direction of
+    // the x-axis, so we reverse it again here
+    projection = glm::scale(projection, {-1.0, 1.0, 1.0});
 
     const glm::mat4 view =
         glm::lookAt(camera.pos, camera.target, {0.0f, 1.0f, 0.0f});
@@ -251,20 +262,25 @@ void Application::run() {
         glDrawElements(GL_TRIANGLES, num_triangles * 3, GL_UNSIGNED_INT, 0);
     }
 
+    // Debug rendering
+    glUseProgram(shaders.line);
+
+    GLuint projection_id = glGetUniformLocation(shaders.render, "projection");
+    glUniformMatrix4fv(projection_id, 1, 0, value_ptr(projection));
+
+    GLuint view_id = glGetUniformLocation(shaders.render, "view");
+    glUniformMatrix4fv(view_id, 1, 0, value_ptr(view));
+
+    GLuint model_id = glGetUniformLocation(shaders.render, "model");
+    glUniformMatrix4fv(model_id, 1, 0, value_ptr(model));
+
     if (render_wireframes) {
-        glUseProgram(shaders.line);
+        glDrawElements(GL_LINE_LOOP, num_triangles * 3, GL_UNSIGNED_INT, 0);
+    }
 
-        GLuint projection_id =
-            glGetUniformLocation(shaders.render, "projection");
-        glUniformMatrix4fv(projection_id, 1, 0, value_ptr(projection));
-
-        GLuint view_id = glGetUniformLocation(shaders.render, "view");
-        glUniformMatrix4fv(view_id, 1, 0, value_ptr(view));
-
-        GLuint model_id = glGetUniformLocation(shaders.render, "model");
-        glUniformMatrix4fv(model_id, 1, 0, value_ptr(model));
-
-        glDrawElements(GL_LINES, num_triangles * 3, GL_UNSIGNED_INT, 0);
+    if (render_debug_triangle) {
+        ebo.write_data(sizeof(debug_triangle_indices), &debug_triangle_indices);
+        glDrawElements(GL_LINE_LOOP, 3, GL_UNSIGNED_INT, 0);
     }
 
     glBindVertexArray(0);

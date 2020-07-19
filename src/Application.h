@@ -55,8 +55,12 @@ class Application {
 
     bool render_model = true;
     bool render_wireframes = true;
+    bool render_debug_triangle = false;
 
     bool run_geometry_pass = true;
+
+    u32 debug_triangle_indices[3] = {0, 1, 2};
+    // glm::uvec3 debug_triangle_indices = glm::uvec3(0);
 
   public:
     bool running = false;
