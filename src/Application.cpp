@@ -55,6 +55,8 @@ void Application::init() {
 
     glViewport(0, 0, window_size.x, window_size.y);
     glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CCW);
+
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -117,9 +119,12 @@ void Application::init() {
 }
 
 static GLuint create_tree_indices(GLuint num_branches, glm::uvec3* triangles) {
-    const glm::uvec3 start_indices[] = {{0, 1, 2}, {0, 3, 1}, {1, 3, 4},
-                                        {4, 5, 1}, {1, 5, 2}, {2, 5, 3},
-                                        {3, 0, 2}};
+    const glm::uvec3 start_indices[] = {/*{0, 1, 2},*/ {0, 3, 1},
+                                        {1, 3, 4},
+                                        {1, 4, 2},
+                                        {2, 4, 5},
+                                        {2, 5, 0},
+                                        {0, 5, 3}};
 
     const glm::uvec3 tip_indices[] = {{3, 6, 4}, {4, 6, 5}, {5, 6, 3}};
 

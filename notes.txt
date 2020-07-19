@@ -1,5 +1,4 @@
 NEXT:
-- do the tip
 - start to iterate
 
 TODO:
@@ -7,6 +6,7 @@ TODO:
 - texture
 
 Bugs:               (@BUG)
+- triangles facing towards the camera are not rendered
 
 Cleanup:            (@CLEANUP)
 

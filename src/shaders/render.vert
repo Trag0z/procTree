@@ -7,12 +7,12 @@ uniform mat4 projection;
 uniform mat4 view;
 uniform mat4 model;
 
-out vec4 pos;
-out vec4 normal;
+out vec3 pos;
+out vec3 normal;
 
 void main()
 {
     gl_Position=projection*view*model*in_pos;
-    pos=model*in_pos;
-    normal=model*in_normal;
+    pos=(model*in_pos).xyz;
+    normal=(model*in_normal).xyz;
 }
