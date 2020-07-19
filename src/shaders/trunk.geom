@@ -26,7 +26,7 @@ void main(){
     }
     
     // Find the center of the triangle
-    vec4 center=gl_in[0].gl_Position+(gl_in[1].gl_Position-gl_in[0].gl_Position);
+    vec4 center=gl_in[0].gl_Position+(gl_in[1].gl_Position-gl_in[0].gl_Position)*.5;
     center+=(gl_in[2].gl_Position-center)*.5;
     
     // Create extruded triangle
