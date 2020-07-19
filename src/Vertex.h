@@ -21,6 +21,9 @@ class ArrayBuffer {
     void write_data(GLuint size, const void* src) const;
     void read_data(GLuint size, void* dst) const;
     void set_as_feedback_target() const;
+
+    void bind_as_copy_source() const;
+    void bind_as_copy_target() const;
 };
 
 class VertexArray {

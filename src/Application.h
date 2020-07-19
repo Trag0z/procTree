@@ -29,8 +29,8 @@ class Application {
         GLuint construction, render, line;
     } shaders;
 
-    ArrayBuffer render_vbo, feedback_vbo, ebo;
-    VertexArray render_vao, feedback_vao;
+    ArrayBuffer start_vbo, render_vbo, feedback_vbo[2], ebo;
+    VertexArray start_vao, render_vao, feedback_vao[2];
 
     Vertex* vertices;
     const GLuint max_vertices = 3 + MAX_BRANCHES() * 4;
@@ -39,7 +39,7 @@ class Application {
     glm::uvec3* triangle_indices;
     const GLuint max_indices = 3 + MAX_BRANCHES() * 3 * 9;
 
-    const GLuint max_geometry_iterations = 10;
+    const GLuint max_geometry_iterations = MAX_GEOMETRY_ITERATIONS; // @CLEANUP
 
     struct {
         int x, y;
@@ -54,14 +54,15 @@ class Application {
     } camera;
 
     glm::vec3 light_position = {4.0f, 11.0f, 5.0f};
+    glm::uvec3 debug_triangle_indices = glm::uvec3(0);
+
+    GLuint geometry_iteration = 0;
 
     bool render_model = true;
-    bool render_wireframes = true;
+    bool render_wireframes = false;
     bool render_debug_triangle = false;
 
     bool run_geometry_pass = true;
-
-    glm::uvec3 debug_triangle_indices = glm::uvec3(0);
 
   public:
     bool running = false;

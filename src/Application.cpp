@@ -3,9 +3,72 @@
 #include "Application.h"
 #include "DebugCallback.h"
 
+static GLuint uint_pow(GLuint base, GLuint exp) {
+    GLuint result = 1;
+    while (exp) {
+        if (exp % 2) {
+            result *= base;
+        }
+        exp /= 2;
+        base *= base;
+    }
+    return result;
+}
+
+static GLuint create_tree_indices(GLuint geometry_iteration,
+                                  glm::uvec3* triangles) {
+    const glm::uvec3 start_indices[] = {{0, 1, 2}, {0, 3, 1}, {1, 3, 4},
+                                        {1, 4, 2}, {2, 4, 5}, {2, 5, 0},
+                                        {0, 5, 3}};
+
+    const glm::uvec3 tip_indices[] = {{3, 6, 4}, {4, 6, 5}, {5, 6, 3}};
+
+    const GLuint triangles_per_branch =
+        sizeof(start_indices) / sizeof(glm::uvec3);
+
+    GLuint num_branches = 0;
+    for (GLuint i = 0; i < geometry_iteration; ++i) {
+        num_branches += uint_pow(3, i);
+    }
+
+    GLuint num_triangles = 0;
+    // GLuint num_tips = uint_pow(3, geometry_iteration);
+
+    GLuint branches_to_leaf = geometry_iteration;
+    GLuint branch_depth = 1;
+    GLuint leaves_added = 0;
+
+    for (GLuint current_branches = 0; current_branches < num_branches;
+         ++current_branches) {
+
+        for (GLuint i = 0; i < triangles_per_branch; ++i) {
+            triangles[num_triangles++] =
+                start_indices[i] + triangles_per_branch * current_branches;
+        }
+
+        if (branch_depth == branches_to_leaf) {
+            // Add tip
+            for (auto vec : tip_indices) {
+                triangles[num_triangles++] =
+                    vec + triangles_per_branch * current_branches;
+            }
+            ++leaves_added;
+
+            if (leaves_added % 3) {
+                leaves_added = 0;
+                --branch_depth;
+            }
+        } else {
+            ++branch_depth;
+        }
+    }
+
+    return num_triangles;
+}
+
 void Application::init() {
 #ifndef NDEBUG
-    printf("Running in debug mode.");
+    printf("DEBUG MODE");
 #endif
 
     //          Initialize SDL              //
@@ -55,7 +118,7 @@ void Application::init() {
 
     glViewport(0, 0, window_size.x, window_size.y);
     glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CCW);
+    glFrontFace(GL_CW);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -77,9 +140,9 @@ void Application::init() {
     ImGui_ImplOpenGL3_Init(glsl_version);
 
     //          Create shaders              //
-    shaders.construction =
-        load_and_compile_shader_from_file("../src/shaders/construction.vert",
-                                          "../src/shaders/trunk.geom", nullptr);
+    shaders.construction = load_and_compile_shader_from_file(
+        "../src/shaders/construction.vert", "../src/shaders/construction.geom",
+        nullptr);
 
     shaders.line = load_and_compile_shader_from_file(
         "../src/shaders/line.vert", nullptr, "../src/shaders/line.frag");
@@ -88,15 +151,24 @@ void Application::init() {
         "../src/shaders/render.vert", nullptr, "../src/shaders/render.frag");
 
     //          Setup buffers               //
-    render_vbo = ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_DRAW,
+    start_vbo =
+        ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_DRAW, sizeof(Vertex) * 3);
+
+    render_vbo = ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_READ,
                              sizeof(Vertex) * max_vertices);
-    feedback_vbo = ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_READ,
-                               sizeof(Vertex) * max_vertices);
+
+    feedback_vbo[0] = ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_COPY,
+                                  sizeof(Vertex) * max_vertices);
+    feedback_vbo[1] = ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_COPY,
+                                  sizeof(Vertex) * max_vertices);
+
     ebo = ArrayBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_STREAM_DRAW,
                       sizeof(Vertex) * max_indices);
 
+    start_vao = VertexArray(start_vbo, ebo);
     render_vao = VertexArray(render_vbo, ebo);
-    feedback_vao = VertexArray(feedback_vbo, ebo);
+    feedback_vao[0] = VertexArray(feedback_vbo[0], ebo);
+    feedback_vao[1] = VertexArray(feedback_vbo[1], ebo);
 
     //          Initial data                //
     vertices = new Vertex[max_vertices];
@@ -113,40 +185,40 @@ void Application::init() {
     vertices[2].length = 5.0f;
 
     triangle_indices = new glm::uvec3[max_indices / 3];
-    triangle_indices[0] = {0, 1, 2};
+    triangle_indices[0] = {2, 1, 0};
 
-    render_vbo.write_data(sizeof(Vertex) * 3, vertices);
+    start_vbo.write_data(sizeof(Vertex) * 3, vertices);
     ebo.write_data(sizeof(GLuint) * 3, triangle_indices);
 
+    //          First Geometry pass          //
+    glUseProgram(shaders.construction);
+
+    start_vao.bind();
+    feedback_vbo[0].set_as_feedback_target();
+
+    glBeginTransformFeedback(GL_POINTS);
+    glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+    glEndTransformFeedback();
+
+    // So that read_Data() and write_data() don't change the vao
+    glBindVertexArray(0);
+
+    glFlush();
+
+    run_geometry_pass = false;
+
+    // Copy data to render buffer
+    feedback_vbo[0].bind_as_copy_source();
+    render_vbo.bind_as_copy_target();
+
+    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0,
+                        sizeof(Vertex) * max_vertices);
+    render_vbo.read_data(sizeof(Vertex) * max_vertices, vertices);
+
+    num_triangles = create_tree_indices(++geometry_iteration, triangle_indices);
+    ebo.write_data(sizeof(glm::uvec3) * num_triangles, triangle_indices);
+
     running = true;
-}
-
-static GLuint create_tree_indices(GLuint num_branches, glm::uvec3* triangles) {
-    const glm::uvec3 start_indices[] = {{0, 1, 2}, {0, 3, 1}, {1, 3, 4},
-                                        {1, 4, 2}, {2, 4, 5}, {2, 5, 0},
-                                        {0, 5, 3}};
-
-    const glm::uvec3 tip_indices[] = {{3, 6, 4}, {4, 6, 5}, {5, 6, 3}};
-
-    const GLuint triangles_per_branch =
-        sizeof(start_indices) / sizeof(glm::uvec3);
-
-    GLuint num_triangles = 0;
-    // GLuint num_tips = 1; // TODO: calculate
-    for (GLuint current_branches = 0; current_branches < num_branches;
-         ++current_branches) {
-        for (GLuint i = 0; i < triangles_per_branch; ++i) {
-            triangles[num_triangles++] =
-                start_indices[i] + triangles_per_branch * current_branches;
-        }
-        // Add tip
-        for (auto vec : tip_indices) {
-            triangles[num_triangles++] =
-                vec + triangles_per_branch * current_branches;
-        }
-    }
-
-    return num_triangles;
 }
 
 void Application::run() {
@@ -181,6 +253,8 @@ void Application::run() {
         using namespace ImGui;
 
         Begin("Debug control", NULL, ImGuiWindowFlags_NoTitleBar);
+        run_geometry_pass = Button("Run geometry pass");
+
         Checkbox("Render model", &render_model);
         Checkbox("Render wireframes", &render_wireframes);
         Checkbox("Render debug triangle", &render_debug_triangle);
@@ -195,15 +269,17 @@ void Application::run() {
         End();
     }
 
-    if (run_geometry_pass) {
-        //          First Geometry pass          //
+    if (run_geometry_pass && ++geometry_iteration < max_geometry_iterations) {
+        const GLuint read_buffer_index = geometry_iteration % 2;
+        const GLuint write_buffer_index = read_buffer_index ^ 1;
+
         glUseProgram(shaders.construction);
 
-        render_vao.bind();
-        feedback_vbo.set_as_feedback_target();
+        feedback_vao[read_buffer_index].bind();
+        feedback_vbo[write_buffer_index].set_as_feedback_target();
 
         glBeginTransformFeedback(GL_POINTS);
-        glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+        glDrawElements(GL_TRIANGLES, num_triangles * 3, GL_UNSIGNED_INT, 0);
         glEndTransformFeedback();
 
         // So that read_Data() and write_data() don't change the vao
@@ -211,14 +287,16 @@ void Application::run() {
 
         glFlush();
 
-        run_geometry_pass = false;
+        // Copy data to render buffer
+        feedback_vbo[write_buffer_index].bind_as_copy_source();
+        render_vbo.bind_as_copy_target();
 
-        // Load data into CPU memory
-        feedback_vbo.read_data(sizeof(Vertex) * max_vertices, vertices);
+        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0,
+                            sizeof(Vertex) * max_vertices);
+        render_vbo.read_data(sizeof(Vertex) * max_vertices, vertices);
 
-        render_vbo.write_data(sizeof(Vertex) * max_vertices, vertices);
-
-        num_triangles = create_tree_indices(1, triangle_indices);
+        num_triangles =
+            create_tree_indices(geometry_iteration, triangle_indices);
         ebo.write_data(sizeof(glm::uvec3) * num_triangles, triangle_indices);
     }
 

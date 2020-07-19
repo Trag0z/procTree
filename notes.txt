@@ -1,10 +1,8 @@
 NEXT:
-- start to iterate
-
-- sort out coordinate system handedness stuff
+- geometry shader extrudes wrong triangles
+- front face is CW again
 
 TODO:
-- geometry iterations
 - texture
 
 Bugs:               (@BUG)

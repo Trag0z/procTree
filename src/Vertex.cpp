@@ -13,18 +13,33 @@ GLuint ArrayBuffer::id() const { return id_; }
 
 void ArrayBuffer::write_data(GLuint size, const void* src) const {
     SDL_assert(size <= size_);
+    SDL_assert(usage_ == GL_STATIC_DRAW || usage_ == GL_DYNAMIC_DRAW ||
+               usage_ == GL_STREAM_DRAW);
     glBindBuffer(binding_target_, id_);
     glBufferSubData(binding_target_, 0, size, src);
 }
 
 void ArrayBuffer::read_data(GLuint size, void* dst) const {
     SDL_assert(size <= size_);
+    SDL_assert(usage_ == GL_STATIC_READ || usage_ == GL_DYNAMIC_READ ||
+               usage_ == GL_STREAM_READ);
     glBindBuffer(binding_target_, id_);
     glGetBufferSubData(binding_target_, 0, size, dst);
 }
 
 void ArrayBuffer::set_as_feedback_target() const {
     glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, id_);
+    SDL_assert(usage_ == GL_STATIC_READ || usage_ == GL_DYNAMIC_READ ||
+               usage_ == GL_STREAM_READ || usage_ == GL_STATIC_COPY ||
+               usage_ == GL_DYNAMIC_COPY || usage_ == GL_STREAM_COPY);
+}
+
+void ArrayBuffer::bind_as_copy_source() const {
+    glBindBuffer(GL_COPY_READ_BUFFER, id_);
+}
+
+void ArrayBuffer::bind_as_copy_target() const {
+    glBindBuffer(GL_COPY_WRITE_BUFFER, id_);
 }
 
 VertexArray::VertexArray(ArrayBuffer vertex_buffer, ArrayBuffer index_buffer) {
