@@ -39,6 +39,7 @@
         "xloctime": "cpp",
         "exception": "cpp",
         "xfacet": "cpp",
-        "*.rh": "cpp"
+        "*.rh": "cpp",
+        "tuple": "cpp"
     }
 }

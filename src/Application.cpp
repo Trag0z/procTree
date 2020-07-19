@@ -107,13 +107,11 @@ void Application::init() {
     vertices[1].length = 5.0f;
     vertices[2].length = 5.0f;
 
-    indices = new GLuint[max_indices];
-    indices[0] = 0;
-    indices[1] = 1;
-    indices[2] = 2;
+    triangle_indices = new glm::uvec3[max_indices / 3];
+    triangle_indices[0] = {0, 1, 2};
 
     render_vbo.write_data(sizeof(Vertex) * 3, vertices);
-    ebo.write_data(sizeof(GLuint) * 3, indices);
+    ebo.write_data(sizeof(GLuint) * 3, triangle_indices);
 
     running = true;
 }
@@ -149,13 +147,14 @@ void Application::run() {
         render_vao.bind();
         feedback_vbo.set_as_feedback_target();
 
-        glBeginTransformFeedback(GL_TRIANGLES);
+        glBeginTransformFeedback(GL_POINTS);
         glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
         glEndTransformFeedback();
 
-        glFlush();
+        // So that read_Data() and write_data() don't change the vao
+        glBindVertexArray(0);
 
-        // create_tree_indices(1);
+        glFlush();
 
         run_geometry_pass = false;
 
@@ -164,9 +163,12 @@ void Application::run() {
 
         render_vbo.write_data(sizeof(Vertex) * max_vertices, vertices);
 
-        GLuint new_indices[] = {0, 1, 2, 5, 0, 3, 1, 4, 5, 6, 3, 4};
-        num_indices = sizeof(new_indices) / sizeof(GLfloat);
-        ebo.write_data(sizeof(GLuint) * num_indices, new_indices);
+        create_tree_indices(1);
+        ebo.write_data(sizeof(glm::uvec3) * num_triangles, triangle_indices);
+
+        // GLuint new_indices[] = {0, 1, 2, 5, 0, 3, 1, 4, 5, 6, 3, 4};
+        // num_triangles = sizeof(new_indices) / sizeof(GLfloat);
+        // ebo.write_data(sizeof(GLuint) * num_triangles, new_indices);
     }
 
     // Render
@@ -189,7 +191,8 @@ void Application::run() {
     glUniformMatrix4fv(uniform_id, 1, 0, value_ptr(projection));
 
     render_vao.bind();
-    glDrawElements(GL_TRIANGLE_STRIP, num_indices, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, num_triangles * 3, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
 
     SDL_GL_SwapWindow(window);
 
@@ -200,17 +203,27 @@ void Application::run() {
 }
 
 void Application::create_tree_indices(GLuint num_branches) {
-    const GLuint start_indices[] = {0, 1, 2, 5, 0, 3, 1, 4, 5, 6, 3, 4};
-    const GLuint indices_per_branch = sizeof(start_indices) / sizeof(GLfloat);
+    const glm::uvec3 start_indices[] = {{0, 1, 2}, {0, 3, 1}, {1, 3, 4},
+                                        {4, 5, 1}, {1, 5, 2}, {2, 5, 3},
+                                        {3, 0, 2}};
 
-    num_indices = 0;
+    const glm::uvec3 tip_indices[] = {{3, 6, 4}, {4, 6, 5}, {5, 6, 3}};
+
+    const GLuint triangles_per_branch =
+        sizeof(start_indices) / sizeof(glm::uvec3);
+
+    num_triangles = 0;
+    // GLuint num_tips = 1; // TODO: calculate
     for (GLuint current_branches = 0; current_branches < num_branches;
          ++current_branches) {
-        for (GLuint i = 0; i < indices_per_branch; ++i) {
-            indices[num_indices++] =
-                start_indices[i] + indices_per_branch * current_branches;
+        for (GLuint i = 0; i < triangles_per_branch; ++i) {
+            triangle_indices[num_triangles++] =
+                start_indices[i] + triangles_per_branch * current_branches;
+        }
+        // Add tip
+        for (auto vec : tip_indices) {
+            triangle_indices[num_triangles++] =
+                vec + triangles_per_branch * current_branches;
         }
     }
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(GLfloat) * num_indices,
-                    indices);
 }

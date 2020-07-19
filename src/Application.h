@@ -35,8 +35,8 @@ class Application {
     Vertex* vertices;
     const GLuint max_vertices = 3 + MAX_BRANCHES() * 4;
 
-    GLuint num_indices;
-    GLuint* indices;
+    GLuint num_triangles;
+    glm::uvec3* triangle_indices;
     const GLuint max_indices = 3 + MAX_BRANCHES() * 3 * 9;
 
     const GLuint max_geometry_iterations = 10;
