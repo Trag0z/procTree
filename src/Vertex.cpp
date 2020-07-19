@@ -39,10 +39,15 @@ VertexArray::VertexArray(ArrayBuffer vertex_buffer, ArrayBuffer index_buffer) {
                           reinterpret_cast<void*>(offsetof(Vertex, position)));
     glEnableVertexAttribArray(0);
 
-    // length attribute
-    glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex),
-                          reinterpret_cast<void*>(offsetof(Vertex, length)));
+    // normal attribute
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          reinterpret_cast<void*>(offsetof(Vertex, normal)));
     glEnableVertexAttribArray(1);
+
+    // length attribute
+    glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+                          reinterpret_cast<void*>(offsetof(Vertex, length)));
+    glEnableVertexAttribArray(2);
 
     // Element array
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer.id());

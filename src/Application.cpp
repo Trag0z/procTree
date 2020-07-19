@@ -54,7 +54,7 @@ void Application::init() {
     SDL_GetWindowSize(window, &window_size.x, &window_size.y);
 
     glViewport(0, 0, window_size.x, window_size.y);
-    // glEnable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -79,10 +79,6 @@ void Application::init() {
         load_and_compile_shader_from_file("../src/shaders/construction.vert",
                                           "../src/shaders/trunk.geom", nullptr);
 
-    // tip_construction_shader_id = load_and_compile_shader_from_file(
-    //     "../src/shaders/construction.vert", "../src/shaders/tip.geom",
-    //     nullptr);
-
     rendering_shader_id = load_and_compile_shader_from_file(
         "../src/shaders/render.vert", nullptr, "../src/shaders/render.frag");
 
@@ -102,6 +98,10 @@ void Application::init() {
     vertices[0].position = {-1.0f, 0.0f, 1.0f, 1.0f};
     vertices[1].position = {1.0f, 0.0f, 1.0f, 1.0f};
     vertices[2].position = {0.0f, 0.0f, -1.0f, 1.0f};
+
+    vertices[0].normal = {0.0f, 1.0f, 0.0f, 1.0f};
+    vertices[1].normal = {0.0f, 1.0f, 0.0f, 1.0f};
+    vertices[2].normal = {0.0f, 1.0f, 0.0f, 1.0f};
 
     vertices[0].length = 5.0f;
     vertices[1].length = 5.0f;

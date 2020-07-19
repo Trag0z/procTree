@@ -87,8 +87,9 @@ GLuint load_and_compile_shader_from_file(const char* vert_path,
             SDL_TriggerBreakpoint();
         glAttachShader(program_id, geom_shader);
 
-        const GLchar* feedbackVaryings[] = {"out_position", "out_ext_length"};
-        glTransformFeedbackVaryings(program_id, 2, feedbackVaryings,
+        const GLchar* feedbackVaryings[] = {"out_position", "out_normal",
+                                                            "out_ext_length"};
+        glTransformFeedbackVaryings(program_id, 3, feedbackVaryings,
                                     GL_INTERLEAVED_ATTRIBS);
     }
 
