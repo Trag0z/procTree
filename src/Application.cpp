@@ -20,7 +20,7 @@ void Application::init() {
     sdl_renderer = SDL_CreateRenderer(window, -1, 0);
 
     // Use OpenGL 3.3 core
-    // const char* glsl_version = "#version 330 core";
+    const char* glsl_version = "#version 330 core";
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
@@ -69,19 +69,22 @@ void Application::init() {
 #endif
 
     //          Setup ImGui context         //
-    // IMGUI_CHECKVERSION();
-    // ImGui::CreateContext();
-    // ImGui::StyleColorsDark();
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGui::StyleColorsDark();
 
-    // ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
-    // ImGui_ImplOpenGL3_Init(glsl_version);
+    ImGui_ImplSDL2_InitForOpenGL(window, gl_context);
+    ImGui_ImplOpenGL3_Init(glsl_version);
 
     //          Create shaders              //
-    construction_shader_id =
+    shaders.construction =
         load_and_compile_shader_from_file("../src/shaders/construction.vert",
                                           "../src/shaders/trunk.geom", nullptr);
 
-    rendering_shader_id = load_and_compile_shader_from_file(
+    shaders.line = load_and_compile_shader_from_file(
+        "../src/shaders/line.vert", nullptr, "../src/shaders/line.frag");
+
+    shaders.render = load_and_compile_shader_from_file(
         "../src/shaders/render.vert", nullptr, "../src/shaders/render.frag");
 
     //          Setup buffers               //
@@ -119,12 +122,12 @@ void Application::init() {
 }
 
 static GLuint create_tree_indices(GLuint num_branches, glm::uvec3* triangles) {
-    const glm::uvec3 start_indices[] = {/*{0, 1, 2},*/ {0, 3, 1},
-                                        {1, 3, 4},
-                                        {1, 4, 2},
-                                        {2, 4, 5},
-                                        {2, 5, 0},
-                                        {0, 5, 3}};
+    const glm::uvec3 start_indices[] = {/*{0, 1, 2},*/ {0, 1, 3},
+                                        {3, 1, 4},
+                                        {4, 1, 2},
+                                        {4, 2, 5},
+                                        {5, 2, 0},
+                                        {5, 0, 3}};
 
     const glm::uvec3 tip_indices[] = {{3, 6, 4}, {4, 6, 5}, {5, 6, 3}};
 
@@ -173,9 +176,21 @@ void Application::run() {
     mouse.last_y = mouse.y;
     mouse.button_state = SDL_GetMouseState(&mouse.x, &mouse.y);
 
+    { // Update gui
+        using namespace ImGui;
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL2_NewFrame(window);
+        ImGui::NewFrame();
+
+        Begin("Debug control", NULL, ImGuiWindowFlags_NoTitleBar);
+        Checkbox("Render model", &render_model);
+        Checkbox("Render wireframes", &render_wireframes);
+        End();
+    }
+
     if (run_geometry_pass) {
         //          First Geometry pass          //
-        glUseProgram(construction_shader_id);
+        glUseProgram(shaders.construction);
 
         render_vao.bind();
         feedback_vbo.set_as_feedback_target();
@@ -219,21 +234,43 @@ void Application::run() {
     glm::mat4 model =
         glm::rotate(glm::mat4(1.0f), object_rotation, {0.0f, 1.0f, 0.0f});
 
-    glUseProgram(rendering_shader_id);
+    if (render_model) {
+        glUseProgram(shaders.render);
 
-    GLuint projection_id =
-        glGetUniformLocation(rendering_shader_id, "projection");
-    glUniformMatrix4fv(projection_id, 1, 0, value_ptr(projection));
+        GLuint projection_id =
+            glGetUniformLocation(shaders.render, "projection");
+        glUniformMatrix4fv(projection_id, 1, 0, value_ptr(projection));
 
-    GLuint view_id = glGetUniformLocation(rendering_shader_id, "view");
-    glUniformMatrix4fv(view_id, 1, 0, value_ptr(view));
+        GLuint view_id = glGetUniformLocation(shaders.render, "view");
+        glUniformMatrix4fv(view_id, 1, 0, value_ptr(view));
 
-    GLuint model_id = glGetUniformLocation(rendering_shader_id, "model");
-    glUniformMatrix4fv(model_id, 1, 0, value_ptr(model));
+        GLuint model_id = glGetUniformLocation(shaders.render, "model");
+        glUniformMatrix4fv(model_id, 1, 0, value_ptr(model));
 
-    render_vao.bind();
-    glDrawElements(GL_TRIANGLES, num_triangles * 3, GL_UNSIGNED_INT, 0);
+        render_vao.bind();
+        glDrawElements(GL_TRIANGLES, num_triangles * 3, GL_UNSIGNED_INT, 0);
+    }
+
+    if (render_wireframes) {
+        glUseProgram(shaders.line);
+
+        GLuint projection_id =
+            glGetUniformLocation(shaders.render, "projection");
+        glUniformMatrix4fv(projection_id, 1, 0, value_ptr(projection));
+
+        GLuint view_id = glGetUniformLocation(shaders.render, "view");
+        glUniformMatrix4fv(view_id, 1, 0, value_ptr(view));
+
+        GLuint model_id = glGetUniformLocation(shaders.render, "model");
+        glUniformMatrix4fv(model_id, 1, 0, value_ptr(model));
+
+        glDrawElements(GL_LINES, num_triangles * 3, GL_UNSIGNED_INT, 0);
+    }
+
     glBindVertexArray(0);
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     SDL_GL_SwapWindow(window);
 

@@ -25,9 +25,9 @@ class Application {
     u32 last_frame_start, frame_start;
     u32 frame_delay = 60 / 1000;
 
-    GLuint construction_shader_id;
-    GLuint tip_construction_shader_id;
-    GLuint rendering_shader_id;
+    struct {
+        GLuint construction, render, line;
+    } shaders;
 
     ArrayBuffer render_vbo, feedback_vbo, ebo;
     VertexArray render_vao, feedback_vao;
@@ -52,6 +52,9 @@ class Application {
         glm::vec3 pos = {0.0f, 5.0f, -6.0f};
         glm::vec3 target = {0.0f, 4.0f, 0.0f};
     } camera;
+
+    bool render_model = true;
+    bool render_wireframes = true;
 
     bool run_geometry_pass = true;
 
