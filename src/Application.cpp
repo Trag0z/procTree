@@ -73,7 +73,7 @@ static GLuint create_tree_indices(GLuint geometry_iteration,
 
 void Application::init() {
 #ifndef NDEBUG
-    printf("DEBUG MODE");
+    printf("DEBUG MODE\n");
 #endif
 
     //          Initialize SDL              //
@@ -125,8 +125,8 @@ void Application::init() {
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
 
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    // glEnable(GL_BLEND);
+    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 #ifndef NDEBUG
     glEnable(GL_DEBUG_OUTPUT);
@@ -207,7 +207,8 @@ void Application::init() {
     feedback_vbo[0].set_as_feedback_target();
 
     glBeginTransformFeedback(GL_TRIANGLES);
-    glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    // glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
     glEndTransformFeedback();
 
     // So that read_Data() and write_data() don't change the vao
@@ -289,7 +290,8 @@ void Application::run() {
         feedback_vbo[write_buffer_index].set_as_feedback_target();
 
         glBeginTransformFeedback(GL_TRIANGLES);
-        glDrawElements(GL_TRIANGLES, num_triangles * 3, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_TRIANGLES, 0, num_triangles * 3);
+        // glDrawElements(GL_TRIANGLES, num_triangles * 3, GL_UNSIGNED_INT, 0);
         glEndTransformFeedback();
 
         // So that read_Data() and write_data() don't change the vao
@@ -348,7 +350,8 @@ void Application::run() {
         glUniform3fv(light_pos_id, 1, value_ptr(light_position));
 
         render_vao.bind();
-        glDrawElements(GL_TRIANGLES, num_triangles * 3, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_TRIANGLES, 0, num_triangles * 3);
+        // glDrawElements(GL_TRIANGLES, num_triangles * 3, GL_UNSIGNED_INT, 0);
     }
 
     // Debug rendering
@@ -364,12 +367,14 @@ void Application::run() {
     glUniformMatrix4fv(model_id, 1, 0, value_ptr(model));
 
     if (render_wireframes) {
-        glDrawElements(GL_LINE_LOOP, num_triangles * 3, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_LINE_LOOP, 0, num_triangles * 3);
+        // glDrawElements(GL_LINE_LOOP, num_triangles * 3, GL_UNSIGNED_INT, 0);
     }
 
     if (render_debug_triangle) {
         ebo.write_data(sizeof(debug_triangle_indices), &debug_triangle_indices);
-        glDrawElements(GL_LINE_LOOP, 3, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_LINE_LOOP, 0, 3);
+        // glDrawElements(GL_LINE_LOOP, 3, GL_UNSIGNED_INT, 0);
     }
 
     glBindVertexArray(0);
