@@ -178,17 +178,13 @@ void Application::init() {
     //          Initial data                //
     vertices = new Vertex[max_vertices];
 
-    // vertices[0].position = {0.0f, 0.0f, 0.0f, 1.0f};
-    // vertices[1].position = {1.0f, 1.0f, 1.0f, 1.0f};
-    // vertices[2].position = {2.0f, 2.0f, 2.0f, 1.0f};
-
     vertices[0].position = {-1.0f, 0.0f, -1.0f, 1.0f};
     vertices[1].position = {1.0f, 0.0f, -1.0f, 1.0f};
     vertices[2].position = {0.0f, 0.0f, 1.0f, 1.0f};
 
-    vertices[0].normal = {0.0f, 1.0f, 0.0f, 1.0f};
-    vertices[1].normal = {0.0f, 1.0f, 0.0f, 1.0f};
-    vertices[2].normal = {0.0f, 1.0f, 0.0f, 1.0f};
+    vertices[0].normal = {0.0f, 1.0f, 0.0f, 0.0f};
+    vertices[1].normal = {0.0f, 1.0f, 0.0f, 0.0f};
+    vertices[2].normal = {0.0f, 1.0f, 0.0f, 0.0f};
 
     vertices[0].length = 5.0f;
     vertices[1].length = 5.0f;
@@ -206,7 +202,7 @@ void Application::init() {
     start_vao.bind();
     feedback_vbo[0].set_as_feedback_target();
 
-    glBeginTransformFeedback(GL_TRIANGLES);
+    glBeginTransformFeedback(GL_POINTS);
     glDrawArrays(GL_TRIANGLES, 0, 3);
     // glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
     glEndTransformFeedback();
@@ -289,7 +285,7 @@ void Application::run() {
         feedback_vao[read_buffer_index].bind();
         feedback_vbo[write_buffer_index].set_as_feedback_target();
 
-        glBeginTransformFeedback(GL_TRIANGLES);
+        glBeginTransformFeedback(GL_POINTS);
         glDrawArrays(GL_TRIANGLES, 0, num_triangles * 3);
         // glDrawElements(GL_TRIANGLES, num_triangles * 3, GL_UNSIGNED_INT, 0);
         glEndTransformFeedback();
