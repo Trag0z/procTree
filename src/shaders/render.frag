@@ -14,8 +14,6 @@ void main()
     // ambient light
     vec3 ambient=vec3(.2);;
     
-    // vec3 light_pos=vec3(4.,6.,5.);
-    
     vec3 light_dir=normalize(light_pos-pos);
     
     vec3 x_tangent=dFdx(pos);
