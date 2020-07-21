@@ -262,6 +262,10 @@ void Application::run() {
         GLuint light_pos_id = glGetUniformLocation(shaders.render, "light_pos");
         glUniform3fv(light_pos_id, 1, value_ptr(light_position));
 
+        GLuint camera_pos_id =
+            glGetUniformLocation(shaders.render, "camera_pos");
+        glUniform3fv(camera_pos_id, 1, value_ptr(camera.pos));
+
         feedback_vao[write_buffer_index].bind();
         glDrawArrays(GL_TRIANGLES, 0, num_triangles * 3);
     }
