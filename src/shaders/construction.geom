@@ -16,9 +16,7 @@ vec4 find_surface_normal(vec4 p1,vec4 p2,vec4 p3){
 void add_triangle(vec4 p1,vec4 p2,vec4 p3,float ext_length){
     vec4 new_normal=vec4(0.);
     
-    if(ext_length>0.){
-        new_normal=find_surface_normal(p1,p2,p3);
-    }
+    new_normal=find_surface_normal(p1,p2,p3);
     
     out_position=p1;
     out_normal=new_normal;
@@ -44,7 +42,7 @@ void main(){
     // Ground triangle
     for(int i=0;i<3;i++){
         out_position=gl_in[i].gl_Position;
-        out_normal=vec4(0.);
+        out_normal=normal[i];
         out_ext_length=0.;
         EmitVertex();
     }

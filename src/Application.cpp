@@ -85,6 +85,8 @@ void Application::init() {
     glEnable(GL_CULL_FACE);
     glFrontFace(GL_CCW);
 
+    glEnable(GL_DEPTH_TEST);
+
     // glEnable(GL_BLEND);
     // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -272,7 +274,7 @@ void Application::run() {
 
     // Render
     glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     // Update camera
     if (mouse.button_state & SDL_BUTTON(SDL_BUTTON_RIGHT)) {

@@ -1,6 +1,4 @@
 NEXT:
-- why can I see through stuff?
-- tip is not really in the middle
 
 TODO:
 - texture
