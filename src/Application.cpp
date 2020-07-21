@@ -17,51 +17,11 @@ static GLuint uint_pow(GLuint base, GLuint exp) {
 
 static GLuint create_tree_indices(GLuint geometry_iteration,
                                   glm::uvec3* triangles) {
-    // const glm::uvec3 start_indices[] = {{0, 1, 2}, {0, 3, 1}, {1, 3, 4},
-    //                                     {1, 4, 2}, {2, 4, 5}, {2, 5, 0},
-    //                                     {0, 5, 3}};
-
-    // const glm::uvec3 tip_indices[] = {{6, 4, 3}, {6, 5, 4}, {6, 3, 5}};
-
-    // const GLuint triangles_per_branch =
-    //     sizeof(start_indices) / sizeof(glm::uvec3);
 
     GLuint num_branches = 0;
     for (GLuint i = 0; i < geometry_iteration; ++i) {
         num_branches += uint_pow(3, i);
     }
-
-    // GLuint num_triangles = 0;
-    // // GLuint num_tips = uint_pow(3, geometry_iteration);
-
-    // GLuint branches_to_leaf = geometry_iteration;
-    // GLuint branch_depth = 1;
-    // GLuint leaves_added = 0;
-
-    // for (GLuint current_branches = 0; current_branches < num_branches;
-    //      ++current_branches) {
-
-    //     for (GLuint i = 0; i < triangles_per_branch; ++i) {
-    //         triangles[num_triangles++] =
-    //             start_indices[i] + triangles_per_branch * current_branches;
-    //     }
-
-    //     if (branch_depth == branches_to_leaf) {
-    //         // Add tip
-    //         for (auto vec : tip_indices) {
-    //             triangles[num_triangles++] =
-    //                 vec + triangles_per_branch * current_branches;
-    //         }
-    //         ++leaves_added;
-
-    //         if (leaves_added % 3) {
-    //             leaves_added = 0;
-    //             --branch_depth;
-    //         }
-    //     } else {
-    //         ++branch_depth;
-    //     }
-    // }
 
     GLuint num_triangles = num_branches * 10;
     for (GLuint i = 0; i < num_triangles; ++i) {
@@ -177,10 +137,11 @@ void Application::init() {
 
     //          Initial data                //
     vertices = new Vertex[max_vertices];
+    triangles = (Triangle*)vertices;
 
     vertices[0].position = {-1.0f, 0.0f, -1.0f, 1.0f};
-    vertices[1].position = {1.0f, 0.0f, -1.0f, 1.0f};
-    vertices[2].position = {0.0f, 0.0f, 1.0f, 1.0f};
+    vertices[1].position = {0.0f, 0.0f, 1.0f, 1.0f};
+    vertices[2].position = {1.0f, 0.0f, -1.0f, 1.0f};
 
     vertices[0].normal = {0.0f, 1.0f, 0.0f, 0.0f};
     vertices[1].normal = {0.0f, 1.0f, 0.0f, 0.0f};
@@ -204,7 +165,6 @@ void Application::init() {
 
     glBeginTransformFeedback(GL_POINTS);
     glDrawArrays(GL_TRIANGLES, 0, 3);
-    // glDrawElements(GL_TRIANGLES, 3, GL_UNSIGNED_INT, 0);
     glEndTransformFeedback();
 
     // So that read_Data() and write_data() don't change the vao
@@ -287,7 +247,6 @@ void Application::run() {
 
         glBeginTransformFeedback(GL_POINTS);
         glDrawArrays(GL_TRIANGLES, 0, num_triangles * 3);
-        // glDrawElements(GL_TRIANGLES, num_triangles * 3, GL_UNSIGNED_INT, 0);
         glEndTransformFeedback();
 
         // So that read_Data() and write_data() don't change the vao
@@ -347,7 +306,6 @@ void Application::run() {
 
         render_vao.bind();
         glDrawArrays(GL_TRIANGLES, 0, num_triangles * 3);
-        // glDrawElements(GL_TRIANGLES, num_triangles * 3, GL_UNSIGNED_INT, 0);
     }
 
     // Debug rendering
@@ -364,13 +322,11 @@ void Application::run() {
 
     if (render_wireframes) {
         glDrawArrays(GL_LINE_LOOP, 0, num_triangles * 3);
-        // glDrawElements(GL_LINE_LOOP, num_triangles * 3, GL_UNSIGNED_INT, 0);
     }
 
     if (render_debug_triangle) {
         ebo.write_data(sizeof(debug_triangle_indices), &debug_triangle_indices);
         glDrawArrays(GL_LINE_LOOP, 0, 3);
-        // glDrawElements(GL_LINE_LOOP, 3, GL_UNSIGNED_INT, 0);
     }
 
     glBindVertexArray(0);

@@ -1,6 +1,6 @@
 NEXT:
-- geometry shader extrudes wrong triangles
-- front face is CW again
+- why can I see through stuff?
+- tip is not really in the middle
 
 TODO:
 - texture
@@ -10,4 +10,3 @@ Bugs:               (@BUG)
 Cleanup:            (@CLEANUP)
 
 Optimizations:      (@OPTIMIZE)
-- can everything be done in GPU arrays?

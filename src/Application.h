@@ -33,6 +33,7 @@ class Application {
     VertexArray start_vao, render_vao, feedback_vao[2];
 
     Vertex* vertices;
+    Triangle* triangles;
     const GLuint max_vertices = 3 + MAX_BRANCHES() * 4;
 
     GLuint num_triangles;

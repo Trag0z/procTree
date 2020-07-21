@@ -69,20 +69,20 @@ void main(){
         // Add all the new triangles
         
         // Sides
-        add_triangle(gl_in[0].gl_Position,new_position[0],gl_in[1].gl_Position,0.);
-        add_triangle(gl_in[1].gl_Position,new_position[0],new_position[1],0.);
+        add_triangle(gl_in[0].gl_Position,gl_in[1].gl_Position,new_position[0],0.);
+        add_triangle(gl_in[1].gl_Position,new_position[1],new_position[0],0.);
         
-        add_triangle(gl_in[1].gl_Position,new_position[1],gl_in[2].gl_Position,0.);
-        add_triangle(gl_in[2].gl_Position,new_position[1],new_position[2],0.);
+        add_triangle(gl_in[1].gl_Position,gl_in[2].gl_Position,new_position[1],0.);
+        add_triangle(gl_in[2].gl_Position,new_position[2],new_position[1],0.);
         
-        add_triangle(gl_in[2].gl_Position,new_position[2],gl_in[0].gl_Position,0.);
-        add_triangle(gl_in[0].gl_Position,new_position[2],new_position[0],0.);
+        add_triangle(gl_in[2].gl_Position,gl_in[0].gl_Position,new_position[2],0.);
+        add_triangle(gl_in[0].gl_Position,new_position[0],new_position[2],0.);
         
         // Tip
-        float new_ext_length=ext_length[0]*.8;
-        add_triangle(new_position[0],new_position[3],new_position[1],new_ext_length);
-        add_triangle(new_position[1],new_position[3],new_position[2],new_ext_length);
-        add_triangle(new_position[2],new_position[3],new_position[0],new_ext_length);
+        float new_ext_length=ext_length[0]*.5;
+        add_triangle(new_position[0],new_position[1],new_position[3],new_ext_length);
+        add_triangle(new_position[1],new_position[2],new_position[3],new_ext_length);
+        add_triangle(new_position[2],new_position[0],new_position[3],new_ext_length);
     }
     EndPrimitive();
     

@@ -7,6 +7,14 @@ struct Vertex {
     float length;
 };
 
+struct Triangle {
+    struct {
+        float pos[4];
+        float normal[4];
+        float length;
+    } points[3];
+};
+
 class ArrayBuffer {
     GLuint id_;
     GLenum binding_target_;
