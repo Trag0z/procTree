@@ -111,22 +111,20 @@ void Application::init() {
     start_vbo =
         ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_DRAW, sizeof(Vertex) * 3);
 
-    render_vbo = ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_READ,
-                             sizeof(Vertex) * max_vertices);
+    const GLuint max_triangles =
+        calculate_num_triangles(MAX_GEOMETRY_ITERATIONS);
 
     feedback_vbo[0] = ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_COPY,
-                                  sizeof(Vertex) * max_vertices);
+                                  sizeof(Vertex) * max_triangles * 3);
     feedback_vbo[1] = ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_COPY,
-                                  sizeof(Vertex) * max_vertices);
+                                  sizeof(Vertex) * max_triangles * 3);
 
     start_vao = VertexArray(start_vbo);
-    render_vao = VertexArray(render_vbo);
     feedback_vao[0] = VertexArray(feedback_vbo[0]);
     feedback_vao[1] = VertexArray(feedback_vbo[1]);
 
     //          Initial data                //
-    vertices = new Vertex[max_vertices];
-    triangles = (Triangle*)vertices;
+    Vertex* vertices = new Vertex[max_triangles * 3];
 
     float sin = sinf(glm::radians(120.0f));
     float cos = cosf(glm::radians(120.0f));
@@ -143,9 +141,6 @@ void Application::init() {
     vertices[1].length = 5.0f;
     vertices[2].length = 5.0f;
 
-    triangle_indices = new glm::uvec3[max_indices / 3];
-    triangle_indices[0] = {0, 1, 2};
-
     start_vbo.write_data(sizeof(Vertex) * 3, vertices);
 
     //          First Geometry pass          //
@@ -156,21 +151,12 @@ void Application::init() {
     glBeginTransformFeedback(GL_POINTS);
     glDrawArrays(GL_TRIANGLES, 0, 3);
     glEndTransformFeedback();
+    glFlush();
 
     // So that read_Data() and write_data() don't change the vao
     glBindVertexArray(0);
 
-    glFlush();
-
     run_geometry_pass = false;
-
-    // Copy data to render buffer
-    feedback_vbo[0].bind_as_copy_source();
-    render_vbo.bind_as_copy_target();
-
-    glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0,
-                        sizeof(Vertex) * max_vertices);
-    render_vbo.read_data(sizeof(Vertex) * max_vertices, vertices);
 
     num_triangles = calculate_num_triangles(++geometry_iteration);
 
@@ -220,9 +206,9 @@ void Application::run() {
         End();
     }
 
-    if (run_geometry_pass && ++geometry_iteration < max_geometry_iterations) {
-        const GLuint read_buffer_index = geometry_iteration % 2;
-        const GLuint write_buffer_index = read_buffer_index ^ 1;
+    if (run_geometry_pass && ++geometry_iteration < MAX_GEOMETRY_ITERATIONS) {
+        read_buffer_index = geometry_iteration % 2;
+        write_buffer_index = read_buffer_index ^ 1;
 
         glUseProgram(shaders.construction);
 
@@ -232,19 +218,10 @@ void Application::run() {
         glBeginTransformFeedback(GL_POINTS);
         glDrawArrays(GL_TRIANGLES, 0, num_triangles * 3);
         glEndTransformFeedback();
+        glFlush();
 
         // So that read_Data() and write_data() don't change the vao
         glBindVertexArray(0);
-
-        glFlush();
-
-        // Copy data to render buffer
-        feedback_vbo[write_buffer_index].bind_as_copy_source();
-        render_vbo.bind_as_copy_target();
-
-        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0,
-                            sizeof(Vertex) * max_vertices);
-        render_vbo.read_data(sizeof(Vertex) * max_vertices, vertices);
 
         num_triangles = calculate_num_triangles(geometry_iteration);
     }
@@ -284,7 +261,7 @@ void Application::run() {
         GLuint light_pos_id = glGetUniformLocation(shaders.render, "light_pos");
         glUniform3fv(light_pos_id, 1, value_ptr(light_position));
 
-        render_vao.bind();
+        feedback_vao[write_buffer_index].bind();
         glDrawArrays(GL_TRIANGLES, 0, num_triangles * 3);
     }
 
