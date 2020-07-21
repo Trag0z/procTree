@@ -153,9 +153,6 @@ void Application::init() {
     glEndTransformFeedback();
     glFlush();
 
-    // So that read_Data() and write_data() don't change the vao
-    glBindVertexArray(0);
-
     run_geometry_pass = false;
 
     num_triangles = calculate_num_triangles(++geometry_iteration);
@@ -196,7 +193,13 @@ void Application::run() {
 
         Begin("Controls", NULL, ImGuiWindowFlags_NoTitleBar);
         run_geometry_pass = Button("Run geometry pass");
+        Text("Geometry passes: %u/%u", geometry_iteration,
+             MAX_GEOMETRY_ITERATIONS);
 
+        NewLine();
+        Text("Right mouse button to turn the model.");
+
+        NewLine();
         Checkbox("Render model", &render_model);
         Checkbox("Render wireframes", &render_wireframes);
 
@@ -206,7 +209,8 @@ void Application::run() {
         End();
     }
 
-    if (run_geometry_pass && ++geometry_iteration < MAX_GEOMETRY_ITERATIONS) {
+    if (run_geometry_pass && geometry_iteration < MAX_GEOMETRY_ITERATIONS) {
+        ++geometry_iteration;
         read_buffer_index = geometry_iteration % 2;
         write_buffer_index = read_buffer_index ^ 1;
 
@@ -219,9 +223,6 @@ void Application::run() {
         glDrawArrays(GL_TRIANGLES, 0, num_triangles * 3);
         glEndTransformFeedback();
         glFlush();
-
-        // So that read_Data() and write_data() don't change the vao
-        glBindVertexArray(0);
 
         num_triangles = calculate_num_triangles(geometry_iteration);
     }
