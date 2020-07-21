@@ -39,7 +39,7 @@ void add_triangle(vec4 p1,vec4 p2,vec4 p3,float ext_length){
 void main(){
     // Find the center of the triangle
     vec4 center=gl_in[0].gl_Position+(gl_in[1].gl_Position-gl_in[0].gl_Position)*.5;
-    center+=(gl_in[2].gl_Position-center)*.5;
+    center+=(gl_in[2].gl_Position-center)*.333;
     
     // Ground triangle
     for(int i=0;i<3;i++){
@@ -61,7 +61,7 @@ void main(){
             new_position[i].w=1.;
         }
         
-        float tip_distance=ext_length[0]*1.25;
+        float tip_distance=ext_length[0]*1.2;
         
         new_position[3]=center+normal[0]*tip_distance;
         new_position[3].w=1.;
