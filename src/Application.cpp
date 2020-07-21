@@ -133,9 +133,9 @@ void Application::init() {
     vertices[1].position = {0.0f, 0.0f, 1.0f, 1.0f};
     vertices[2].position = {sin, 0.0f, cos, 1.0f};
 
-    vertices[0].normal = {0.0f, 1.0f, 0.0f, 0.0f};
-    vertices[1].normal = {0.0f, 1.0f, 0.0f, 0.0f};
-    vertices[2].normal = {0.0f, 1.0f, 0.0f, 0.0f};
+    vertices[0].normal = {0.0f, 1.0f, 0.0f};
+    vertices[1].normal = {0.0f, 1.0f, 0.0f};
+    vertices[2].normal = {0.0f, 1.0f, 0.0f};
 
     vertices[0].length = 5.0f;
     vertices[1].length = 5.0f;

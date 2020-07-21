@@ -3,16 +3,8 @@
 
 struct Vertex {
     glm::vec4 position;
-    glm::vec4 normal;
+    glm::vec3 normal;
     float length;
-};
-
-struct Triangle {
-    struct {
-        float pos[4];
-        float normal[4];
-        float length;
-    } points[3];
 };
 
 class ArrayBuffer {

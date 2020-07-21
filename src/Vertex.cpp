@@ -55,7 +55,7 @@ VertexArray::VertexArray(ArrayBuffer vbo) {
     glEnableVertexAttribArray(0);
 
     // normal attribute
-    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           reinterpret_cast<void*>(offsetof(Vertex, normal)));
     glEnableVertexAttribArray(1);
 

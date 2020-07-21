@@ -2,21 +2,19 @@
 layout(triangles)in;
 layout(points,max_vertices=30)out;
 
-in vec4 normal[];
+in vec3 normal[];
 in float ext_length[];
 
 out vec4 out_position;
-out vec4 out_normal;
+out vec3 out_normal;
 out float out_ext_length;
 
-vec4 find_surface_normal(vec4 p1,vec4 p2,vec4 p3){
-    return vec4(normalize(cross(vec3(p1-p2),vec3(p1-p3))),0.f);
+vec3 find_surface_normal(vec4 p1,vec4 p2,vec4 p3){
+    return normalize(cross(vec3(p1-p2),vec3(p1-p3)));
 }
 
 void add_triangle(vec4 p1,vec4 p2,vec4 p3,float ext_length){
-    vec4 new_normal=vec4(0.);
-    
-    new_normal=find_surface_normal(p1,p2,p3);
+    vec3 new_normal=find_surface_normal(p1,p2,p3);
     
     out_position=p1;
     out_normal=new_normal;
@@ -55,12 +53,12 @@ void main(){
         vec4 new_position[4];
         
         for(int i=0;i<3;i++){
-            new_position[i]=gl_in[i].gl_Position+(center-gl_in[i].gl_Position)*shrink_factor+normal[0]*ext_length[0];
+            new_position[i]=gl_in[i].gl_Position+(center-gl_in[i].gl_Position)*shrink_factor+vec4(normal[0]*ext_length[0],0.);
         }
         
         float tip_distance=ext_length[0]*1.2;
         
-        new_position[3]=center+normal[0]*tip_distance;
+        new_position[3]=center+vec4(normal[0]*tip_distance,0.);
         
         // Add all the new triangles
         

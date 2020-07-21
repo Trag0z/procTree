@@ -1,6 +1,6 @@
 #version 330 core
 layout(location=0)in vec4 in_pos;
-layout(location=1)in vec4 in_normal;
+layout(location=1)in vec3 in_normal;
 layout(location=2)in float in_length;
 
 uniform mat4 projection;
@@ -14,5 +14,5 @@ void main()
 {
     gl_Position=projection*view*model*in_pos;
     pos=(model*in_pos).xyz;
-    normal=(model*in_normal).xyz;
+    normal=(model*vec4(in_normal,0.)).xyz;
 }
