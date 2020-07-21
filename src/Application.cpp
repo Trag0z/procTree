@@ -139,9 +139,12 @@ void Application::init() {
     vertices = new Vertex[max_vertices];
     triangles = (Triangle*)vertices;
 
-    vertices[0].position = {-1.0f, 0.0f, -1.0f, 1.0f};
+    float sin = sinf(glm::radians(120.0f));
+    float cos = cosf(glm::radians(120.0f));
+
+    vertices[0].position = {-sin, 0.0f, cos, 1.0f};
     vertices[1].position = {0.0f, 0.0f, 1.0f, 1.0f};
-    vertices[2].position = {1.0f, 0.0f, -1.0f, 1.0f};
+    vertices[2].position = {sin, 0.0f, cos, 1.0f};
 
     vertices[0].normal = {0.0f, 1.0f, 0.0f, 0.0f};
     vertices[1].normal = {0.0f, 1.0f, 0.0f, 0.0f};
@@ -321,7 +324,7 @@ void Application::run() {
     glUniformMatrix4fv(model_id, 1, 0, value_ptr(model));
 
     if (render_wireframes) {
-        glDrawArrays(GL_LINE_LOOP, 0, num_triangles * 3);
+        glDrawArrays(GL_LINE_STRIP, 0, num_triangles * 3);
     }
 
     if (render_debug_triangle) {
