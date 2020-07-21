@@ -28,8 +28,8 @@ class ArrayBuffer {
 
     void write_data(GLuint size, const void* src) const;
     void read_data(GLuint size, void* dst) const;
-    void set_as_feedback_target() const;
 
+    void bind_as_feedback_target() const;
     void bind_as_copy_source() const;
     void bind_as_copy_target() const;
 };
@@ -39,7 +39,7 @@ class VertexArray {
 
   public:
     VertexArray() {}
-    VertexArray(ArrayBuffer vertex_buffer, ArrayBuffer index_buffer);
+    VertexArray(ArrayBuffer vbo);
 
     void bind() const;
 };

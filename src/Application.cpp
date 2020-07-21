@@ -15,20 +15,13 @@ static GLuint uint_pow(GLuint base, GLuint exp) {
     return result;
 }
 
-static GLuint create_tree_indices(GLuint geometry_iteration,
-                                  glm::uvec3* triangles) {
-
+static GLuint calculate_num_triangles(GLuint geometry_iteration) {
     GLuint num_branches = 0;
     for (GLuint i = 0; i < geometry_iteration; ++i) {
         num_branches += uint_pow(3, i);
     }
 
-    GLuint num_triangles = num_branches * 10;
-    for (GLuint i = 0; i < num_triangles; ++i) {
-        triangles[i] = {i * 3, i * 3 + 1, i * 3 + 2};
-    }
-
-    return num_triangles;
+    return num_branches * 10;
 }
 
 void Application::init() {
@@ -87,9 +80,6 @@ void Application::init() {
 
     glEnable(GL_DEPTH_TEST);
 
-    // glEnable(GL_BLEND);
-    // glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 #ifndef NDEBUG
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -129,13 +119,10 @@ void Application::init() {
     feedback_vbo[1] = ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_COPY,
                                   sizeof(Vertex) * max_vertices);
 
-    ebo = ArrayBuffer(GL_ELEMENT_ARRAY_BUFFER, GL_STREAM_DRAW,
-                      sizeof(Vertex) * max_indices);
-
-    start_vao = VertexArray(start_vbo, ebo);
-    render_vao = VertexArray(render_vbo, ebo);
-    feedback_vao[0] = VertexArray(feedback_vbo[0], ebo);
-    feedback_vao[1] = VertexArray(feedback_vbo[1], ebo);
+    start_vao = VertexArray(start_vbo);
+    render_vao = VertexArray(render_vbo);
+    feedback_vao[0] = VertexArray(feedback_vbo[0]);
+    feedback_vao[1] = VertexArray(feedback_vbo[1]);
 
     //          Initial data                //
     vertices = new Vertex[max_vertices];
@@ -160,13 +147,11 @@ void Application::init() {
     triangle_indices[0] = {0, 1, 2};
 
     start_vbo.write_data(sizeof(Vertex) * 3, vertices);
-    ebo.write_data(sizeof(GLuint) * 3, triangle_indices);
 
     //          First Geometry pass          //
     glUseProgram(shaders.construction);
-
     start_vao.bind();
-    feedback_vbo[0].set_as_feedback_target();
+    feedback_vbo[0].bind_as_feedback_target();
 
     glBeginTransformFeedback(GL_POINTS);
     glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -187,8 +172,7 @@ void Application::init() {
                         sizeof(Vertex) * max_vertices);
     render_vbo.read_data(sizeof(Vertex) * max_vertices, vertices);
 
-    num_triangles = create_tree_indices(++geometry_iteration, triangle_indices);
-    ebo.write_data(sizeof(glm::uvec3) * num_triangles, triangle_indices);
+    num_triangles = calculate_num_triangles(++geometry_iteration);
 
     running = true;
 }
@@ -224,16 +208,11 @@ void Application::run() {
     { // Update gui
         using namespace ImGui;
 
-        Begin("Debug control", NULL, ImGuiWindowFlags_NoTitleBar);
+        Begin("Controls", NULL, ImGuiWindowFlags_NoTitleBar);
         run_geometry_pass = Button("Run geometry pass");
 
         Checkbox("Render model", &render_model);
         Checkbox("Render wireframes", &render_wireframes);
-        Checkbox("Render debug triangle", &render_debug_triangle);
-
-        NewLine();
-        Text("Debug triangle indices");
-        InputScalarN("Indices", ImGuiDataType_U32, &debug_triangle_indices, 3);
 
         NewLine();
         DragFloat3("Light position", value_ptr(light_position), 0.2f);
@@ -248,7 +227,7 @@ void Application::run() {
         glUseProgram(shaders.construction);
 
         feedback_vao[read_buffer_index].bind();
-        feedback_vbo[write_buffer_index].set_as_feedback_target();
+        feedback_vbo[write_buffer_index].bind_as_feedback_target();
 
         glBeginTransformFeedback(GL_POINTS);
         glDrawArrays(GL_TRIANGLES, 0, num_triangles * 3);
@@ -267,9 +246,7 @@ void Application::run() {
                             sizeof(Vertex) * max_vertices);
         render_vbo.read_data(sizeof(Vertex) * max_vertices, vertices);
 
-        num_triangles =
-            create_tree_indices(geometry_iteration, triangle_indices);
-        ebo.write_data(sizeof(glm::uvec3) * num_triangles, triangle_indices);
+        num_triangles = calculate_num_triangles(geometry_iteration);
     }
 
     // Render
@@ -281,8 +258,6 @@ void Application::run() {
         const float sensitivity = 0.03f;
         object_rotation += (mouse.x - mouse.last_x) * sensitivity;
     }
-
-    ebo.write_data(sizeof(glm::uvec3) * num_triangles, triangle_indices);
 
     glm::mat4 projection =
         glm::perspective(glm::radians(100.0f), 1920.0f / 1200.0f, 0.1f, 100.0f);
@@ -328,13 +303,6 @@ void Application::run() {
     if (render_wireframes) {
         glDrawArrays(GL_LINE_STRIP, 0, num_triangles * 3);
     }
-
-    if (render_debug_triangle) {
-        ebo.write_data(sizeof(debug_triangle_indices), &debug_triangle_indices);
-        glDrawArrays(GL_LINE_LOOP, 0, 3);
-    }
-
-    glBindVertexArray(0);
 
     ImGui::Render();
     ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

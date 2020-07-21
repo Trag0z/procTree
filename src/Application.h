@@ -29,8 +29,8 @@ class Application {
         GLuint construction, render, line;
     } shaders;
 
-    ArrayBuffer start_vbo, render_vbo, feedback_vbo[2], ebo;
     VertexArray start_vao, render_vao, feedback_vao[2];
+    ArrayBuffer start_vbo, render_vbo, feedback_vbo[2];
 
     Vertex* vertices;
     Triangle* triangles;

@@ -27,7 +27,7 @@ void ArrayBuffer::read_data(GLuint size, void* dst) const {
     glGetBufferSubData(binding_target_, 0, size, dst);
 }
 
-void ArrayBuffer::set_as_feedback_target() const {
+void ArrayBuffer::bind_as_feedback_target() const {
     glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, id_);
     SDL_assert(usage_ == GL_STATIC_READ || usage_ == GL_DYNAMIC_READ ||
                usage_ == GL_STREAM_READ || usage_ == GL_STATIC_COPY ||
@@ -42,12 +42,12 @@ void ArrayBuffer::bind_as_copy_target() const {
     glBindBuffer(GL_COPY_WRITE_BUFFER, id_);
 }
 
-VertexArray::VertexArray(ArrayBuffer vertex_buffer, ArrayBuffer index_buffer) {
+VertexArray::VertexArray(ArrayBuffer vbo) {
     glGenVertexArrays(1, &id);
     glBindVertexArray(id);
 
     // Vetex array
-    glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer.id());
+    glBindBuffer(GL_ARRAY_BUFFER, vbo.id());
 
     // position attribute
     glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(Vertex),
@@ -63,9 +63,6 @@ VertexArray::VertexArray(ArrayBuffer vertex_buffer, ArrayBuffer index_buffer) {
     glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex),
                           reinterpret_cast<void*>(offsetof(Vertex, length)));
     glEnableVertexAttribArray(2);
-
-    // Element array
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, index_buffer.id());
 
     // Unbind array for error safety
     glBindVertexArray(0);
