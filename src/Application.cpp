@@ -33,7 +33,10 @@ void Application::init() {
     SDL_assert_always(SDL_Init(SDL_INIT_EVERYTHING) == 0);
     // SDL_assert_always(IMG_Init(IMG_INIT_PNG) != 0);
 
-    window = SDL_CreateWindow("procTree", 3840, 956, 1920, 1200,
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
+
+    window = SDL_CreateWindow("procTree", 3840, 956, 1920, 1080,
                               SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS |
                                   SDL_WINDOW_OPENGL);
     SDL_assert_always(window);
@@ -79,6 +82,8 @@ void Application::init() {
     glFrontFace(GL_CCW);
 
     glEnable(GL_DEPTH_TEST);
+
+    glEnable(GL_MULTISAMPLE);
 
 #ifndef NDEBUG
     glEnable(GL_DEBUG_OUTPUT);
