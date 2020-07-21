@@ -50,19 +50,17 @@ void main(){
     if(ext_length[0]!=0.){
         
         // Create new points
-        float shrink_factor=.2;
+        float shrink_factor=.5;
         
         vec4 new_position[4];
         
         for(int i=0;i<3;i++){
             new_position[i]=gl_in[i].gl_Position+(center-gl_in[i].gl_Position)*shrink_factor+normal[0]*ext_length[0];
-            new_position[i].w=1.;
         }
         
         float tip_distance=ext_length[0]*1.2;
         
         new_position[3]=center+normal[0]*tip_distance;
-        new_position[3].w=1.;
         
         // Add all the new triangles
         
@@ -77,7 +75,7 @@ void main(){
         add_triangle(gl_in[0].gl_Position,new_position[0],new_position[2],0.);
         
         // Tip
-        float new_ext_length=ext_length[0]*.5;
+        float new_ext_length=ext_length[0]*.4;
         add_triangle(new_position[0],new_position[1],new_position[3],new_ext_length);
         add_triangle(new_position[1],new_position[2],new_position[3],new_ext_length);
         add_triangle(new_position[2],new_position[0],new_position[3],new_ext_length);
