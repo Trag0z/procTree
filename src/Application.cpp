@@ -32,13 +32,6 @@ void Application::init() {
     //          Initialize SDL              //
     SDL_assert_always(SDL_Init(SDL_INIT_EVERYTHING) == 0);
 
-    window = SDL_CreateWindow(
-        "procTree", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1920, 1080,
-        SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS | SDL_WINDOW_OPENGL);
-    SDL_assert_always(window);
-
-    sdl_renderer = SDL_CreateRenderer(window, -1, 0);
-
     // Set opengl attributes
     // Use OpenGL 3.3 core
     const char* glsl_version = "#version 330 core";
@@ -49,6 +42,14 @@ void Application::init() {
 
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
+
+    window = SDL_CreateWindow(
+        "procTree", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 0, 0,
+        SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_FULLSCREEN_DESKTOP |
+            SDL_WINDOW_OPENGL);
+    SDL_assert_always(window);
+
+    sdl_renderer = SDL_CreateRenderer(window, -1, 0);
 
 #ifndef NDEBUG
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
@@ -76,12 +77,10 @@ void Application::init() {
 
     glm::ivec2 window_size;
     SDL_GetWindowSize(window, &window_size.x, &window_size.y);
-
     glViewport(0, 0, window_size.x, window_size.y);
+
     glEnable(GL_CULL_FACE);
-
     glEnable(GL_DEPTH_TEST);
-
     glEnable(GL_MULTISAMPLE);
 
 #ifndef NDEBUG
@@ -113,7 +112,7 @@ void Application::init() {
 
     //          Setup buffers               //
     start_vbo =
-        ArrayBuffer(GL_ARRAY_BUFFER, GL_STREAM_DRAW, sizeof(Vertex) * 3);
+        ArrayBuffer(GL_ARRAY_BUFFER, GL_STATIC_DRAW, sizeof(Vertex) * 3);
 
     const GLuint max_triangles =
         calculate_num_triangles(MAX_GEOMETRY_ITERATIONS);
@@ -241,7 +240,7 @@ void Application::run() {
         object_rotation += (mouse.x - mouse.last_x) * sensitivity;
     }
 
-    glm::mat4 projection =
+    const glm::mat4 projection =
         glm::perspective(glm::radians(100.0f), 1920.0f / 1200.0f, 0.1f, 100.0f);
 
     const glm::mat4 view =
@@ -253,6 +252,8 @@ void Application::run() {
     if (render_model) {
         glUseProgram(shaders.render);
 
+        // It's pretty inefficient to do all of this every frame, but for a
+        // simple project like this, it doesn't matter
         GLuint projection_id =
             glGetUniformLocation(shaders.render, "projection");
         glUniformMatrix4fv(projection_id, 1, 0, value_ptr(projection));
@@ -275,18 +276,18 @@ void Application::run() {
     }
 
     // Debug rendering
-    glUseProgram(shaders.line);
-
-    GLuint projection_id = glGetUniformLocation(shaders.line, "projection");
-    glUniformMatrix4fv(projection_id, 1, 0, value_ptr(projection));
-
-    GLuint view_id = glGetUniformLocation(shaders.line, "view");
-    glUniformMatrix4fv(view_id, 1, 0, value_ptr(view));
-
-    GLuint model_id = glGetUniformLocation(shaders.line, "model");
-    glUniformMatrix4fv(model_id, 1, 0, value_ptr(model));
-
     if (render_wireframes) {
+        glUseProgram(shaders.line);
+
+        GLuint projection_id = glGetUniformLocation(shaders.line, "projection");
+        glUniformMatrix4fv(projection_id, 1, 0, value_ptr(projection));
+
+        GLuint view_id = glGetUniformLocation(shaders.line, "view");
+        glUniformMatrix4fv(view_id, 1, 0, value_ptr(view));
+
+        GLuint model_id = glGetUniformLocation(shaders.line, "model");
+        glUniformMatrix4fv(model_id, 1, 0, value_ptr(model));
+
         glDrawArrays(GL_LINE_STRIP, 0, num_triangles * 3);
     }
 

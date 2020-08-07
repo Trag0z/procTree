@@ -2,7 +2,41 @@
 Das Kernstück des Programms ist die Klasse \lstinline{Application}. In \lstinline{main()} wird ein Objekt dieser Klasse erstellt und initialisiert, daraufhin wird die Methode \lstinline{run()} in einer Schleife aufgerufen, solange das Programm läuft. Diese Methode stellt ein Frame in der Simulation dar. 
 
 \chapter{Klasse \lstinline{Application}}
-\lstinline{Application} verwaltet das Fenster in OpenGL sowie die meisten anderen Komponenten des Programms. In der Methode \lstinline{init()} wird zuerst mit Hilfe der Bibliothek \href{https://www.libsdl.org/}{SDL2} ein Fenster und OpenGL-Kontext erstellt. Es wird OpenGL Version 3.3 verwendet. 
+\lstinline{Application} verwaltet das Fenster in OpenGL sowie die meisten anderen Komponenten des Programms. 
+
+\section{\lstinline{init()}}
+In der Methode \lstinline{init()} wird zuerst mit Hilfe der Bibliothek \href{https://www.libsdl.org/}{SDL2} ein Fenster und OpenGL-Kontext erstellt. Dabei wird OpenGL Version 3.3 im Core Profil verwendet. Des Weiteren wird Vsync aktiviert, die Fenstergröße von SDL erfragt und als OpenGL Viewport festgelegt und einige weitere OpenGL Optionen per \lstinline{glEnable} aktiviert:
+
+\begin{itemize}
+    \item \lstinline{GL_CULL_FACE} aktiviert Backface-Culling, um nur zur Kamera gerichtete Dreiecke anzuzeigen
+    \item \lstinline{GL_DEPTH_TEST} aktiviert den Tiefenpuffer, verdeckte Fragmente zu verwerfen
+    \item \lstinline{GL_MULTISAMPLE} aktiviert Multisampling, um Aliasing zu verringern
+\end{itemize}
+
+Außerdem wird im Falle einer Debug-Konfiguration OpenGls Debug-Ausgabe aktiviert und die Funktion \lstinline{handle_gl_debug_output} als Callback festgelegt. Daraufhin wird noch die Bibliothek \href{https://github.com/ocornut/imgui}{ImGui} initialisiert, mit der ein Interface zur Bedienung des Programms zur Verfügung gestellt wird.
+
+Nun werden die drei verwendeten Shader-Programme geladen und kompiliert und die benötigten Vertex Buffer und Vertex Array Objekte initialisiert. Der Buffer \lstinline{start_vbo} enthält nur drei Vertices und es wird \lstinline{GL_STATIC_DRAW} als Verwendung angegeben, da dieser Buffer das initiale Dreieck enthält und danach nicht mehr verwendet wird. Die beiden Buffer in \lstinline{feedback_vbo} sollen genug Platz haben, um die benötigte Anzahl an Dreiecken für \lstinline{MAX_GEOMETRY_ITERATIONS} Geometrie-Iterationen zu beinhalten. Für sie wird der Verwendungszweck \lstinline{GL_STREAM_COPY} angegeben, da nur Shader die Daten dieser Buffer lesen und schreiben sollen.
+
+Daraufhin wird der Start-Buffer mit den initialen Vertices gefüllt. Es handelt sich dabei um ein Dreieck auf der von der X- und Z-Achse aufgespannten Ebene, bei dem alle drei Punkte den Abstand 1 zum Ursprung des Koordinatensystems haben. Die Normalen zeigen alle in Richtung der Y-Achse (also nach oben), die initiale Länge zur Konstruktion des Baums ist 5.
+
+Anschließend wird dieses Dreieck das erste Mal durch den Construction-Shader geschickt, und so der Stamm des Baums erstellt (weitere Details zu diesem Vorgehen im folgenden Abschnitt). 
+
+\section{\lstinline{run()}}
+Diese Methode erfüllt im wesentlichen vier Funktionen: Das Empfangen von Nutzereingaben, Darstellung des graphischen Interfaces, (bei Bedarf) ausführen eines weiteren Geometry-Passes und abschließend das Zeichnen des Baums auf den Bildschirm. 
+
+Die Variablen \lstinline{frame_start} und \lstinline{last_frame_start} speichern die Ticks zu Beginn des aktuellen und des letzten Frames, um eine gleichmäßige Framerate zu ermöglichen. Danach werden die Events verarbeitet, die das SDL-Framework zur Verfügung stellt und bei Bedarf \lstinline{is_running} auf \lstinline{false} gesetzt, um nach dem aktuellen Frame das Programm zu beenden. Außerdem werden die Mausposition und der Status der Maustasten aktualisiert. 
+
+Nun wird mithilfe von ImGui ein simples Interface aufgebaut, mit dem die Darstellung des Models sowie der Wireframes an- und ausgeschaltet und die Position der Lichtquelle verschoben werden kann. Außerdem gibt es einen Button zum Ausführen eines Geometry-Passes, der bei einem Klick die Variable \lstinline{run_geometry_pass} auf \lstinline{true} setzt.
+
+Wurde dieser Button geklickt und es die maximale Anzahl an Iterationen noch nicht erreicht, wird nun ein Geometry-Pass durchgeführt. Dazu wird der Counter für die Iterationen erhöht und aus seinem Wert bestimmt, welcher der beiden Feedback-Buffer in diesem Durchgang Quelle und welcher Ziel des Shader-Programms sein soll. Ersterer (bzw. das Vertex Array Objekt, zu dem er gehört) wird wie gewöhnlich eingebunden. Der Ziel-Buffer hingegen wird mit der Funktion \lstinline{glBindBufferBase} als Transform Feedback Buffer gebunden. Bevor nun \lstinline{glDrawArrays} aufgerufen werden kann, muss \lstinline{glBeginTransformFeedback} aufgerufen werden und als Argument das Output-Primitive angegeben werden, welches der Geometry Shader auch tatsächlich ausgibt. Nach dem Call von \lstinline{glDrawArrays} wird \lstinline{glEndTransformFeedback} aufgerufen, um das Transform Feedback zu beenden und durch \lstinline{glFlush} sichergestellt, dass die zuvor in Auftrag gegebenen Operationen auch abgeschlossen wurden. Zuletzt wird in diesem Schritt \lstinline{num_triangles} aktualisiert, um ab jetzt mit der korrekten, nun höhere Zahl an Dreiecken zu arbeiten. 
+
+Der nächste Schritt ist das Rendering. Hier werden zuerst der Color- und der Depth-Buffer geleert. Falls die rechte Maustaste gedrückt ist, wird \lstinline{object_rotation} entsprechend der Mausbewegung seit dem letzten Frame angepasst. Projection- und View-Matrix bleiben konstant, nur die Model-Matrix wird entsprechend der zuvor berechneten Rotation jedes Frame neu berechnet. Falls das Baum-Modell gerendert werden soll, wird nun der Render-Shader verwendet und die benötigten Uniform-Variablen werden gesetzt. Anschließend wird die aktuelle Anzahl an Dreiecken aus dem Feedback Buffer gerendert, der in den im letzten Geometry-Pass geschrieben wurde. 
+
+Für das Rendering der Wireframes wird sehr ähnlich verfahren: Ist die entsprechende Boolean-Variable gesetzt, wird der Line-Shader verwendet und seine Uniform-Variablen gesetzt. Daraufhin werden die Dreiecke mittels \lstinline{glDrawArrays} gezeichnet.
+
+Zuletzt wird dann das GUI gerendert und der Framebuffer getauscht, bevor auf den Start des nächsten Frames gewartet wird.
+
+
 
 \chapter{Shader}
 In der Anwendung werden drei verschiedene Shader-Programme verwendet. Zwei davon, \lstinline{render} und \lstinline{line}, bestehen aus einem Vertex- und einem Fragment-Shader. Sie werden verwendet, um den konstruierten Baum bzw. seine Wireframe-Repräsentation auf den Bildschirm zu zeichnen. Das dritte Shader-Programm, \lstinline{construction}, besteht aus einem Vertex- und einem Geometry-Shader. Es wird zeichnet keine Pixel auf den Bildschirm, sondern nutzt Transform Feedback um neue Vertices für den Baum auf der Grafikkarte zu berechnen. Die verschiedenen Shader und ihr Code werden im Folgenden im Detail erklärt.
@@ -26,91 +60,6 @@ Zur Vereinfachung des später folgenden Codes wird die Funktion \lstinline{add_t
 
 In der \lstinline{main()}-Funktion wird zunächst das Eingabedreieck ausgegeben. Ist die \lstinline{ext_length} des ersten Vertices dieses Dreiecks ungleich \lstinline{0}, muss ein weiterer Ast auf diesem Dreieck aufgebaut werden. Dazu wird zuerst der Mittelpunkt des Eingabedreiecks bestimmt und der \lstinline{shrink_factor} definiert, welcher angibt, wie weit die Punkte des zweiten Dreiecks zum gemeinsamen Mittelpunkt hin verschoben werden. Die Positionen des zweiten Dreiecks werden dann dadurch berechnet, dass die Positionen des Eingabedreiecks erst zum Mittelpunkt hin und danach entlang der Normalen \lstinline{ext_length} weit verschoben werden. Die Position der Spitze befindet sich noch 20\% höher und genau über dem Mittelpunkt. Diese vier Positionen werden im Array \lstinline{new_positions} gespeichert, sodass sie danach wiederverwendet werden können um die neun neuen Dreiecke zu bilden, aus denen der konstruierte Ast besteht. 
 
-Mithilfe der Funktion \lstinline{add_triangle} werden dann zunächst die sechs Dreiecke für die Seiten des Asts (mit \lstinline{ext_length = 0}) hinzugefügt, danach die drei Dreiecke für die Spitze des Astes mit einer 60\% geringeren \lstinline{ext_length} als der Eingabewert. 
+Mithilfe der Funktion \lstinline{add_triangle} werden dann zunächst die sechs Dreiecke für die Seiten des Asts (mit \lstinline{ext_length = 0}) hinzugefügt, danach die drei Dreiecke für die Spitze des Asts mit einer 60\% geringeren \lstinline{ext_length} als der Eingabewert. 
 
 Zuletzt wird \lstinline{EndPrimitive()} aufgerufen, um die Ausgabe von Primitiven zu beenden.
-
-
-
-
-\begin{minipage}{1.0\textwidth} \small
-\begin{lstlisting}
-    #version 330 core
-    layout(triangles)in;
-    layout(points,max_vertices=30)out;
-    
-    in vec3 normal[];
-    in float ext_length[];
-    
-    out vec4 out_position;
-    out vec3 out_normal;
-    out float out_ext_length;
-    
-    void add_triangle(vec4 p1,vec4 p2,vec4 p3,float ext_length){
-        vec3 new_normal=normalize(cross(vec3(p1-p2),vec3(p1-p3)));
-        
-        out_position=p1;
-        out_normal=new_normal;
-        out_ext_length=ext_length;
-        EmitVertex();
-        
-        out_position=p2;
-        out_normal=new_normal;
-        out_ext_length=ext_length;
-        EmitVertex();
-        
-        out_position=p3;
-        out_normal=new_normal;
-        out_ext_length=ext_length;
-        EmitVertex();
-    }
-    
-    void main(){
-        // Find the center of the triangle
-        vec4 center=gl_in[0].gl_Position+(gl_in[1].gl_Position-gl_in[0].gl_Position)*.5;
-        center+=(gl_in[2].gl_Position-center)*.333;
-        
-        // Ground triangle
-        for(int i=0;i<3;i++){
-            out_position=gl_in[i].gl_Position;
-            out_normal=normal[i];
-            out_ext_length=0.;
-            EmitVertex();
-        }
-        
-        if(ext_length[0]!=0.){
-            // Create new points
-            float shrink_factor=.5;
-            
-            vec4 new_position[4];
-            
-            for(int i=0;i<3;i++){
-                new_position[i]=gl_in[i].gl_Position+(center-gl_in[i].gl_Position)*shrink_factor+vec4(normal[0]*ext_length[0],0.);
-            }
-            
-            float tip_distance=ext_length[0]*1.2;
-            
-            new_position[3]=center+vec4(normal[0]*tip_distance,0.);
-            
-            // Add all the new triangles
-            
-            // Sides
-            add_triangle(gl_in[0].gl_Position,gl_in[1].gl_Position,new_position[0],0.);
-            add_triangle(gl_in[1].gl_Position,new_position[1],new_position[0],0.);
-            
-            add_triangle(gl_in[1].gl_Position,gl_in[2].gl_Position,new_position[1],0.);
-            add_triangle(gl_in[2].gl_Position,new_position[2],new_position[1],0.);
-            
-            add_triangle(gl_in[2].gl_Position,gl_in[0].gl_Position,new_position[2],0.);
-            add_triangle(gl_in[0].gl_Position,new_position[0],new_position[2],0.);
-            
-            // Tip
-            float new_ext_length=ext_length[0]*.4;
-            add_triangle(new_position[0],new_position[1],new_position[3],new_ext_length);
-            add_triangle(new_position[1],new_position[2],new_position[3],new_ext_length);
-            add_triangle(new_position[2],new_position[0],new_position[3],new_ext_length);
-        }
-        EndPrimitive();
-    }
-\end{lstlisting}
-\end{minipage}
