@@ -29,7 +29,6 @@ void add_triangle(vec4 p1,vec4 p2,vec4 p3,float ext_length){
 }
 
 void main(){
-    
     // Ground triangle
     for(int i=0;i<3;i++){
         out_position=gl_in[i].gl_Position;

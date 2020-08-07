@@ -24,7 +24,11 @@ Die Input-Variablen \lstinline{normal} und \lstinline{ext_length} werden als Arr
 
 Zur Vereinfachung des später folgenden Codes wird die Funktion \lstinline{add_triangle} definiert. Sie nimmt drei Punkte und eine Erweiterungslänge \lstinline{ext_length} entgegen, berechnet die Flächennormale der Punkte und gibt dann für jeden der drei Eingabepunkte einen Vertex mit der entsprechenden Position aus. Als Normale wird bei allen drei Vertices die Flächennormale verwendet, die Erweiterungslänge der Vertices entspricht dem Wert des Parameters \lstinline{ext_length}.
 
-In der \lstinline{main()}-Funktion wird zunächst das Eingabedreieck ausgegeben. Ist die \lstinline{ext_length} des ersten Vertices dieses Dreiecks ungleich \lstinline{0}, muss ein weiterer Baum auf diesem Dreieck aufgebaut werden. Dazu wird zuerst der Mittelpunkt des Eingabedreiecks bestimmt.
+In der \lstinline{main()}-Funktion wird zunächst das Eingabedreieck ausgegeben. Ist die \lstinline{ext_length} des ersten Vertices dieses Dreiecks ungleich \lstinline{0}, muss ein weiterer Ast auf diesem Dreieck aufgebaut werden. Dazu wird zuerst der Mittelpunkt des Eingabedreiecks bestimmt und der \lstinline{shrink_factor} definiert, welcher angibt, wie weit die Punkte des zweiten Dreiecks zum gemeinsamen Mittelpunkt hin verschoben werden. Die Positionen des zweiten Dreiecks werden dann dadurch berechnet, dass die Positionen des Eingabedreiecks erst zum Mittelpunkt hin und danach entlang der Normalen \lstinline{ext_length} weit verschoben werden. Die Position der Spitze befindet sich noch 20\% höher und genau über dem Mittelpunkt. Diese vier Positionen werden im Array \lstinline{new_positions} gespeichert, sodass sie danach wiederverwendet werden können um die neun neuen Dreiecke zu bilden, aus denen der konstruierte Ast besteht. 
+
+Mithilfe der Funktion \lstinline{add_triangle} werden dann zunächst die sechs Dreiecke für die Seiten des Asts (mit \lstinline{ext_length = 0}) hinzugefügt, danach die drei Dreiecke für die Spitze des Astes mit einer 60\% geringeren \lstinline{ext_length} als der Eingabewert. 
+
+Zuletzt wird \lstinline{EndPrimitive()} aufgerufen, um die Ausgabe von Primitiven zu beenden.
 
 
 
