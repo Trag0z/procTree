@@ -31,24 +31,24 @@ void Application::init() {
 
     //          Initialize SDL              //
     SDL_assert_always(SDL_Init(SDL_INIT_EVERYTHING) == 0);
-    // SDL_assert_always(IMG_Init(IMG_INIT_PNG) != 0);
 
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
-    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
-
-    window = SDL_CreateWindow("procTree", 3840, 956, 1920, 1080,
-                              SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS |
-                                  SDL_WINDOW_OPENGL);
+    window = SDL_CreateWindow(
+        "procTree", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1920, 1080,
+        SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_BORDERLESS | SDL_WINDOW_OPENGL);
     SDL_assert_always(window);
 
     sdl_renderer = SDL_CreateRenderer(window, -1, 0);
 
+    // Set opengl attributes
     // Use OpenGL 3.3 core
     const char* glsl_version = "#version 330 core";
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK,
                         SDL_GL_CONTEXT_PROFILE_CORE);
+
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 2);
 
 #ifndef NDEBUG
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
@@ -79,7 +79,6 @@ void Application::init() {
 
     glViewport(0, 0, window_size.x, window_size.y);
     glEnable(GL_CULL_FACE);
-    glFrontFace(GL_CCW);
 
     glEnable(GL_DEPTH_TEST);
 
@@ -162,7 +161,7 @@ void Application::init() {
 
     num_triangles = calculate_num_triangles(++geometry_iteration);
 
-    running = true;
+    is_running = true;
 }
 
 void Application::run() {
@@ -184,7 +183,7 @@ void Application::run() {
             (event.type == SDL_WINDOWEVENT &&
              event.window.event == SDL_WINDOWEVENT_CLOSE &&
              event.window.windowID == SDL_GetWindowID(window))) {
-            running = false;
+            is_running = false;
         }
     }
 

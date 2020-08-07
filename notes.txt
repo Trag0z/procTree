@@ -1,7 +1,5 @@
-NEXT:
-
 TODO:
-- texture
+- automatic full screen?
 
 Bugs:               (@BUG)
 

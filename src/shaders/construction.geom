@@ -9,12 +9,8 @@ out vec4 out_position;
 out vec3 out_normal;
 out float out_ext_length;
 
-vec3 find_surface_normal(vec4 p1,vec4 p2,vec4 p3){
-    return normalize(cross(vec3(p1-p2),vec3(p1-p3)));
-}
-
 void add_triangle(vec4 p1,vec4 p2,vec4 p3,float ext_length){
-    vec3 new_normal=find_surface_normal(p1,p2,p3);
+    vec3 new_normal=normalize(cross(vec3(p1-p2),vec3(p1-p3)));
     
     out_position=p1;
     out_normal=new_normal;
@@ -33,9 +29,6 @@ void add_triangle(vec4 p1,vec4 p2,vec4 p3,float ext_length){
 }
 
 void main(){
-    // Find the center of the triangle
-    vec4 center=gl_in[0].gl_Position+(gl_in[1].gl_Position-gl_in[0].gl_Position)*.5;
-    center+=(gl_in[2].gl_Position-center)*.333;
     
     // Ground triangle
     for(int i=0;i<3;i++){
@@ -46,6 +39,9 @@ void main(){
     }
     
     if(ext_length[0]!=0.){
+        // Find the center of the triangle
+        vec4 center=gl_in[0].gl_Position+(gl_in[1].gl_Position-gl_in[0].gl_Position)*.5;
+        center+=(gl_in[2].gl_Position-center)*.333;
         
         // Create new points
         float shrink_factor=.5;
@@ -79,5 +75,4 @@ void main(){
         add_triangle(new_position[2],new_position[0],new_position[3],new_ext_length);
     }
     EndPrimitive();
-    
 }

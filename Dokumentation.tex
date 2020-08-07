@@ -1,0 +1,112 @@
+\chapter{Überblick}
+Das Kernstück des Programms ist die Klasse \lstinline{Application}. In \lstinline{main()} wird ein Objekt dieser Klasse erstellt und initialisiert, daraufhin wird die Methode \lstinline{run()} in einer Schleife aufgerufen, solange das Programm läuft. Diese Methode stellt ein Frame in der Simulation dar. 
+
+\chapter{Klasse \lstinline{Application}}
+\lstinline{Application} verwaltet das Fenster in OpenGL sowie die meisten anderen Komponenten des Programms. In der Methode \lstinline{init()} wird zuerst mit Hilfe der Bibliothek \href{https://www.libsdl.org/}{SDL2} ein Fenster und OpenGL-Kontext erstellt. Es wird OpenGL Version 3.3 verwendet. 
+
+\chapter{Shader}
+In der Anwendung werden drei verschiedene Shader-Programme verwendet. Zwei davon, \lstinline{render} und \lstinline{line}, bestehen aus einem Vertex- und einem Fragment-Shader. Sie werden verwendet, um den konstruierten Baum bzw. seine Wireframe-Repräsentation auf den Bildschirm zu zeichnen. Das dritte Shader-Programm, \lstinline{construction}, besteht aus einem Vertex- und einem Geometry-Shader. Es wird zeichnet keine Pixel auf den Bildschirm, sondern nutzt Transform Feedback um neue Vertices für den Baum auf der Grafikkarte zu berechnen. Die verschiedenen Shader und ihr Code werden im Folgenden im Detail erklärt.
+
+\section{\lstinline{Render} Shader-Programm}
+In diesem Shader-Programm wird im Vertex-Shader die Ausgabeposition der Vertices durch eine Model-View-Projection Matrizenmultiplikation bestimmt. \lstinline{model} enthält dabei in diesem Fall nur eine Rotation um die Y-Achse. An den Fragment-Shader werden die Position und eine Normale weitergegeben, jeweils um die genannte Rotation gedreht, um so im Fragment-Shader eine Beleuchtung von einer festen Position zu ermöglichen.
+
+Der entsprechende Fragment-Shader verwendet eine \lstinline{uniform light_pos} für die Position der Lichtquelle und \lstinline{camera_pos} für die Position der Kamera, um den Baum mittels Phong Shading zu beleuchten. Die Farbe des Baums ist dabei als \lstinline{object_color} fest in den Shader einprogrammiert.
+
+\section{\lstinline{Line} Shader-Programm}
+Dieses Shader-Programm zum zeichnen der Linien der Polygone (Wireframe) ist sehr simpel. Der Vertex-Shader bestimmt die Vertex-Position durch die Multiplikation der Model-View-Projection Matrizen; der Fragment-Shader gibt immer Rot als Farbe aus.
+
+\section{\lstinline{Construction} Shader-Programm}
+Dieses Shader-Programm ist das Herzstück des Projekts. Es nutzt Transform Feedback im Geometry-Shader, um aus den bestehenden Dreiecken neue Vertices zu berechnen und so iterativ den Baum weiter aufzubauen. Der Vertex-Shader spielt dabei eine sehr geringe Rolle, denn er reicht einfach nur die Eingabewerte an den Geometry-Shader weiter.
+
+Der Geometry-Shader bestimmt in Zeile 2 zunächst sein Input-Pimitive als \lstinline{triangles}, was bedeutet, dass er jeweils die Daten eines Dreiecks erhält und mit diesen arbeitet. Zeile 3 legt \lstinline{points} als Output-Primitive fest und gibt an, dass maximal 30 Punkte ausgegeben werden. Hier hätte alternativ auch mit einem Triangle-Strip als Output-Primitive gearbeitet werden können, in diesem Fall wäre es jedoch kompliziert geworden, die korrekte Reihenfolge der ausgegebenen Werte sicherzustellen.
+
+Die Input-Variablen \lstinline{normal} und \lstinline{ext_length} werden als Arrays deklariert, da ein Wert für jeden der drei Vertices des zu bearbeitenden Dreiecks zur Verfügung steht. Das Ausgabeformat entspricht dem der Eingabevertices für dieses Shader-Programm. 
+
+Zur Vereinfachung des später folgenden Codes wird die Funktion \lstinline{add_triangle} definiert. Sie nimmt drei Punkte und eine Erweiterungslänge \lstinline{ext_length} entgegen, berechnet die Flächennormale der Punkte und gibt dann für jeden der drei Eingabepunkte einen Vertex mit der entsprechenden Position aus. Als Normale wird bei allen drei Vertices die Flächennormale verwendet, die Erweiterungslänge der Vertices entspricht dem Wert des Parameters \lstinline{ext_length}.
+
+In der \lstinline{main()}-Funktion wird zunächst das Eingabedreieck ausgegeben. Ist die \lstinline{ext_length} des ersten Vertices dieses Dreiecks ungleich \lstinline{0}, muss ein weiterer Baum auf diesem Dreieck aufgebaut werden. Dazu wird zuerst der Mittelpunkt des Eingabedreiecks bestimmt.
+
+
+
+
+\begin{minipage}{1.0\textwidth} \small
+\begin{lstlisting}
+    #version 330 core
+    layout(triangles)in;
+    layout(points,max_vertices=30)out;
+    
+    in vec3 normal[];
+    in float ext_length[];
+    
+    out vec4 out_position;
+    out vec3 out_normal;
+    out float out_ext_length;
+    
+    void add_triangle(vec4 p1,vec4 p2,vec4 p3,float ext_length){
+        vec3 new_normal=normalize(cross(vec3(p1-p2),vec3(p1-p3)));
+        
+        out_position=p1;
+        out_normal=new_normal;
+        out_ext_length=ext_length;
+        EmitVertex();
+        
+        out_position=p2;
+        out_normal=new_normal;
+        out_ext_length=ext_length;
+        EmitVertex();
+        
+        out_position=p3;
+        out_normal=new_normal;
+        out_ext_length=ext_length;
+        EmitVertex();
+    }
+    
+    void main(){
+        // Find the center of the triangle
+        vec4 center=gl_in[0].gl_Position+(gl_in[1].gl_Position-gl_in[0].gl_Position)*.5;
+        center+=(gl_in[2].gl_Position-center)*.333;
+        
+        // Ground triangle
+        for(int i=0;i<3;i++){
+            out_position=gl_in[i].gl_Position;
+            out_normal=normal[i];
+            out_ext_length=0.;
+            EmitVertex();
+        }
+        
+        if(ext_length[0]!=0.){
+            // Create new points
+            float shrink_factor=.5;
+            
+            vec4 new_position[4];
+            
+            for(int i=0;i<3;i++){
+                new_position[i]=gl_in[i].gl_Position+(center-gl_in[i].gl_Position)*shrink_factor+vec4(normal[0]*ext_length[0],0.);
+            }
+            
+            float tip_distance=ext_length[0]*1.2;
+            
+            new_position[3]=center+vec4(normal[0]*tip_distance,0.);
+            
+            // Add all the new triangles
+            
+            // Sides
+            add_triangle(gl_in[0].gl_Position,gl_in[1].gl_Position,new_position[0],0.);
+            add_triangle(gl_in[1].gl_Position,new_position[1],new_position[0],0.);
+            
+            add_triangle(gl_in[1].gl_Position,gl_in[2].gl_Position,new_position[1],0.);
+            add_triangle(gl_in[2].gl_Position,new_position[2],new_position[1],0.);
+            
+            add_triangle(gl_in[2].gl_Position,gl_in[0].gl_Position,new_position[2],0.);
+            add_triangle(gl_in[0].gl_Position,new_position[0],new_position[2],0.);
+            
+            // Tip
+            float new_ext_length=ext_length[0]*.4;
+            add_triangle(new_position[0],new_position[1],new_position[3],new_ext_length);
+            add_triangle(new_position[1],new_position[2],new_position[3],new_ext_length);
+            add_triangle(new_position[2],new_position[0],new_position[3],new_ext_length);
+        }
+        EndPrimitive();
+    }
+\end{lstlisting}
+\end{minipage}
