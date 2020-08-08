@@ -1,10 +1,13 @@
-\chapter{Überblick}
-Das Kernstück des Programms ist die Klasse \lstinline{Application}. In \lstinline{main()} wird ein Objekt dieser Klasse erstellt und initialisiert, daraufhin wird die Methode \lstinline{run()} in einer Schleife aufgerufen, solange das Programm läuft. Diese Methode stellt ein Frame in der Simulation dar. 
+\chapter{Überblick und Bedienung}
+Dieses Programm erstellt prozedural einen Baum, indem mit einem einzelnen Dreieck gestartet wird und durch mehrere Durchläufe eines Geometry-Shaders per Transform Feedback immer neue, kleinere Äste hinzugefügt werden. Das Kernstück des Programms ist die Klasse \lstinline{Application}. In \lstinline{main()} wird ein Objekt dieser Klasse erstellt und initialisiert, daraufhin wird die Methode \lstinline{run()} in einer Schleife aufgerufen, solange die Membervariable \lstinline{is_running} auf \lstinline{true} gesetzt ist. 
+
+Beim Start des Programms wird ein Fenster im Vollbildmodus geöffnet und der erste Geometry-Pass durchgeführt, sodass bereits der Stamm des späteren Baums vorhanden ist. In dem Fenster wird ein User Interface angezeigt, in dem mit einem Button weitere Geometry-Passes durchgeführt werden können. Außerdem kann durch Checkboxen das Rendering des Baums sowie die Anzeige einer Wireframe-Darstellung des Modells gesteuert werden. Außerdem gibt es die Möglichkeit, die Position der Lichtquelle zu verändern. Das Modell selbst kann durch Gedrückthalten der rechten Maustaste und Bewegen der Maus gedreht werden.
+
 
 \chapter{Klasse \lstinline{Application}}
-\lstinline{Application} verwaltet das Fenster in OpenGL sowie die meisten anderen Komponenten des Programms. 
+Die Klasse \lstinline{Application} verwaltet das Fenster in OpenGL sowie die meisten anderen Komponenten des Programms. 
 
-\section{\lstinline{init()}}
+\section{\lstinline{Application::init()}}
 In der Methode \lstinline{init()} wird zuerst mit Hilfe der Bibliothek \href{https://www.libsdl.org/}{SDL2} ein Fenster und OpenGL-Kontext erstellt. Dabei wird OpenGL Version 3.3 im Core Profil verwendet. Des Weiteren wird Vsync aktiviert, die Fenstergröße von SDL erfragt und als OpenGL Viewport festgelegt und einige weitere OpenGL Optionen per \lstinline{glEnable} aktiviert:
 
 \begin{itemize}
@@ -21,7 +24,7 @@ Daraufhin wird der Start-Buffer mit den initialen Vertices gefüllt. Es handelt 
 
 Anschließend wird dieses Dreieck das erste Mal durch den Construction-Shader geschickt, und so der Stamm des Baums erstellt (weitere Details zu diesem Vorgehen im folgenden Abschnitt). 
 
-\section{\lstinline{run()}}
+\section{\lstinline{Application::run()}}
 Diese Methode erfüllt im wesentlichen vier Funktionen: Das Empfangen von Nutzereingaben, Darstellung des graphischen Interfaces, (bei Bedarf) ausführen eines weiteren Geometry-Passes und abschließend das Zeichnen des Baums auf den Bildschirm. 
 
 Die Variablen \lstinline{frame_start} und \lstinline{last_frame_start} speichern die Ticks zu Beginn des aktuellen und des letzten Frames, um eine gleichmäßige Framerate zu ermöglichen. Danach werden die Events verarbeitet, die das SDL-Framework zur Verfügung stellt und bei Bedarf \lstinline{is_running} auf \lstinline{false} gesetzt, um nach dem aktuellen Frame das Programm zu beenden. Außerdem werden die Mausposition und der Status der Maustasten aktualisiert. 
@@ -63,3 +66,19 @@ In der \lstinline{main()}-Funktion wird zunächst das Eingabedreieck ausgegeben.
 Mithilfe der Funktion \lstinline{add_triangle} werden dann zunächst die sechs Dreiecke für die Seiten des Asts (mit \lstinline{ext_length = 0}) hinzugefügt, danach die drei Dreiecke für die Spitze des Asts mit einer 60\% geringeren \lstinline{ext_length} als der Eingabewert. 
 
 Zuletzt wird \lstinline{EndPrimitive()} aufgerufen, um die Ausgabe von Primitiven zu beenden.
+
+\chapter{Weitere Files}
+\section{DebugCallback.h}
+Enthält die Funktion \lstinline{handle_gl_debug_output}, die an OpenGl als Debug Callback weitergereicht wird. Sie gibt die OpenGL Fehler auf der Konsole aus und unterbricht das Programm, wenn die Schwere des Fehlers zu hoch ist.
+
+\section{pch.h}
+Precompiled Header, um die Kompilierung zu beschleunigen. Enthält Bibliotheken und sonstige Abhängigkeiten.
+
+\section{Shaders.h}
+Enthält die Funktion \lstinline{load_and_compile_shader_from_file}, die Textdateien einliest, ein Shader-Programm kompiliert und die ID dieses Programms zurück gibt, sowie ihre Helferfunktionen \lstinline{checkCompileErrors} und \lstinline{read_text_file}. Besonders zu erwähnen ist hier, dass beim Kompilieren des Geometry-Shaders die sogenannten Feedback Varyings angegeben werden müssen. Hierbei handelt es sich um die Namen der Variablen, die der Shader beim Transform Feedback ausgibt. Diese Namen werden mit \lstinline{glTransformFeedbackVaryings} festgelegt und gelten dann für den nächsten Aufruf von \lstinline{glLinkProgram}. In diesem Fall wird \lstinline{GL_INTERLEAVED_ATTRIBS} als letztes Argument an \lstinline{glTransformFeedbackVaryings} übergeben, da Vertices ausgegeben werden sollen, die jeweils die drei Werte \lstinline{out_position}, \lstinline{out_normal} und \lstinline{out_ext_length} enthalten.
+
+\section{Types.h}
+Beinhaltet einige \lstinline{typedef}s, um Integer-Werte einer bestimmten Bit-Größe bequemer verwenden zu können.
+
+\section{Vertex.h/Vertex.cpp}
+Enthält die Klassen \lstinline{Vertex}, \lstinline{ArrayBuffer} und \lstinline{VertexArray}. \lstinline{Vertex} definiert das verwendete Vertex-Format mit einem vierdimensionalen Vektor für die Position, einem dreidimensionalen Vektor als Normalen und einer Länge für die Erweiterung durch den nächsten Geometry-Pass. \lstinline{ArrayBuffer} bietet Methoden zur bequemeren Verwendung des Buffers und erhöht die Fehlersicherheit durch Asserts, z.B. wenn ein Write-Buffer als Transform Feedback Ziel gesetzt werden soll. \lstinline{VertexArray} legt bei der Erstellung das Format der Vertex-Attribute fest, sodass dieser Code nicht für jedes Vertex Array wiederholt werden muss.

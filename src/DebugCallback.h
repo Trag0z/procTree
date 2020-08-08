@@ -6,12 +6,13 @@ void GLAPIENTRY handle_gl_debug_output(GLenum source, GLenum type, GLuint id,
                                        const GLchar* message,
                                        const void* user_param) {
     // These parameters are not used, but the function prototype requires them
+    // and parameters can't be unused on high warning levels
     static_cast<GLsizei>(length);
     static_cast<const void*>(user_param);
 
     // ignore non-significant error/warning codes
-    if (id == 100 || id == 1280 /* invalid enum (usually bi ImGui) */)
-        return;
+    // if (id == 100) // || id == 1280 /* invalid enum (usually bi ImGui) */)
+    //     return;
 
     std::cout << "---------------" << std::endl;
     std::cout << "Debug message (" << id << "): " << message << std::endl;

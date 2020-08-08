@@ -200,7 +200,7 @@ void Application::run() {
              MAX_GEOMETRY_ITERATIONS);
 
         NewLine();
-        Text("Right mouse button to turn the model.");
+        Text("Hold right mouse button to turn the model.");
 
         NewLine();
         Checkbox("Render model", &render_model);
@@ -275,7 +275,7 @@ void Application::run() {
         glDrawArrays(GL_TRIANGLES, 0, num_triangles * 3);
     }
 
-    // Debug rendering
+    // Wireframe rendering
     if (render_wireframes) {
         glUseProgram(shaders.line);
 

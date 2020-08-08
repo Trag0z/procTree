@@ -19,19 +19,11 @@ void ArrayBuffer::write_data(GLuint size, const void* src) const {
     glBufferSubData(binding_target_, 0, size, src);
 }
 
-void ArrayBuffer::read_data(GLuint size, void* dst) const {
-    SDL_assert(size <= size_);
-    SDL_assert(usage_ == GL_STATIC_READ || usage_ == GL_DYNAMIC_READ ||
-               usage_ == GL_STREAM_READ);
-    glBindBuffer(binding_target_, id_);
-    glGetBufferSubData(binding_target_, 0, size, dst);
-}
-
 void ArrayBuffer::bind_as_feedback_target() const {
-    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, id_);
     SDL_assert(usage_ == GL_STATIC_READ || usage_ == GL_DYNAMIC_READ ||
                usage_ == GL_STREAM_READ || usage_ == GL_STATIC_COPY ||
                usage_ == GL_DYNAMIC_COPY || usage_ == GL_STREAM_COPY);
+    glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, id_);
 }
 
 void ArrayBuffer::bind_as_copy_source() const {
@@ -46,7 +38,6 @@ VertexArray::VertexArray(ArrayBuffer vbo) {
     glGenVertexArrays(1, &id);
     glBindVertexArray(id);
 
-    // Vetex array
     glBindBuffer(GL_ARRAY_BUFFER, vbo.id());
 
     // position attribute
