@@ -26,14 +26,6 @@ void ArrayBuffer::bind_as_feedback_target() const {
     glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, id_);
 }
 
-void ArrayBuffer::bind_as_copy_source() const {
-    glBindBuffer(GL_COPY_READ_BUFFER, id_);
-}
-
-void ArrayBuffer::bind_as_copy_target() const {
-    glBindBuffer(GL_COPY_WRITE_BUFFER, id_);
-}
-
 VertexArray::VertexArray(ArrayBuffer vbo) {
     glGenVertexArrays(1, &id);
     glBindVertexArray(id);

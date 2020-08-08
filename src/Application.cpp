@@ -55,7 +55,7 @@ void Application::init() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
 
-    //          Create openGL context       //
+    //          Create OpenGL context       //
     gl_context = SDL_GL_CreateContext(window);
     if (gl_context == NULL) {
         printf("OpenGL context could not be created! SDL Error: %s\n",
@@ -146,7 +146,7 @@ void Application::init() {
 
     start_vbo.write_data(sizeof(Vertex) * 3, vertices);
 
-    //          First Geometry pass          //
+    //          First geometry pass          //
     glUseProgram(shaders.construction);
     start_vao.bind();
     feedback_vbo[0].bind_as_feedback_target();
