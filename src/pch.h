@@ -4,7 +4,7 @@
 #include <iostream>
 #include <sstream>
 
-// Both of these raise warnings, I don't know what to do but ignore them
+// Both of these raise warnings, I don't know what to do but to ignore them
 #pragma warning(push, 0)
 #include <GL/glew.h>
 #include <glm/ext.hpp>

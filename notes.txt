@@ -1,8 +1,0 @@
-TODO:
-- automatic full screen?
-
-Bugs:               (@BUG)
-
-Cleanup:            (@CLEANUP)
-
-Optimizations:      (@OPTIMIZE)
