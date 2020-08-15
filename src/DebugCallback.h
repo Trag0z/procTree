@@ -10,9 +10,9 @@ void GLAPIENTRY handle_gl_debug_output(GLenum source, GLenum type, GLuint id,
     static_cast<GLsizei>(length);
     static_cast<const void*>(user_param);
 
-    // ignore non-significant error/warning codes
-    // if (id == 100) // || id == 1280 /* invalid enum (usually bi ImGui) */)
-    //     return;
+    // Ignore non-significant error/warning codes
+    if (id == 100 || id == 1280 /* invalid enum (triggered by ImGui) */)
+        return;
 
     std::cout << "---------------" << std::endl;
     std::cout << "Debug message (" << id << "): " << message << std::endl;
