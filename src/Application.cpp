@@ -1,7 +1,10 @@
 #pragma once
 #include "pch.h"
 #include "Application.h"
+
+#ifdef _DEBUG
 #include "DebugCallback.h"
+#endif
 
 static GLuint uint_pow(GLuint base, GLuint exp) {
     GLuint result = 1;
@@ -25,7 +28,7 @@ static GLuint calculate_num_triangles(GLuint geometry_iteration) {
 }
 
 void Application::init() {
-#ifndef NDEBUG
+#ifdef _DEBUG
     printf("DEBUG MODE\n");
 #endif
 
@@ -51,7 +54,7 @@ void Application::init() {
 
     sdl_renderer = SDL_CreateRenderer(window, -1, 0);
 
-#ifndef NDEBUG
+#ifdef _DEBUG
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
 #endif
 
@@ -83,7 +86,7 @@ void Application::init() {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE);
 
-#ifndef NDEBUG
+#ifdef _DEBUG
     glEnable(GL_DEBUG_OUTPUT);
     glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     glDebugMessageCallback(handle_gl_debug_output, nullptr);
@@ -167,10 +170,6 @@ void Application::run() {
     last_frame_start = frame_start;
     frame_start = SDL_GetTicks();
 
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplSDL2_NewFrame(window);
-    ImGui::NewFrame();
-
     SDL_PumpEvents();
 
     SDL_Event event;
@@ -193,6 +192,9 @@ void Application::run() {
 
     { // Update gui
         using namespace ImGui;
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplSDL2_NewFrame(window);
+        NewFrame();
 
         Begin("Controls", NULL, ImGuiWindowFlags_NoTitleBar);
         run_geometry_pass = Button("Run geometry pass");
